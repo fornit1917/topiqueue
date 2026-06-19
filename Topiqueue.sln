@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A1860A61-299A-4958-BA6E-CD4DFD3175B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0A81809D-1DA5-4FA7-BC9B-D593C867A1CF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{F66AF891-0CA7-40D5-A418-D646A7EDE654}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", "{A1E25CAE-86EC-4815-83AE-F4491C8093C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.Core", "src\Topiqueue.Core\Topiqueue.Core.csproj", "{378BC2A7-5477-4FCE-993F-344232D0F64D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.Postgres", "src\Topiqueue.Postgres\Topiqueue.Postgres.csproj", "{6BBFB291-0E7D-414A-8317-220DBDA1B219}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.AspNetCore", "src\Topiqueue.AspNetCore\Topiqueue.AspNetCore.csproj", "{B9001103-6C61-42FB-A982-5245C6379094}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.Samples.Cli.Common", "samples\Topiqueue.Samples.Cli.Common\Topiqueue.Samples.Cli.Common.csproj", "{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.Tests.Core", "tests\Topiqueue.Tests.Core\Topiqueue.Tests.Core.csproj", "{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{378BC2A7-5477-4FCE-993F-344232D0F64D} = {A1860A61-299A-4958-BA6E-CD4DFD3175B1}
+		{6BBFB291-0E7D-414A-8317-220DBDA1B219} = {A1860A61-299A-4958-BA6E-CD4DFD3175B1}
+		{B9001103-6C61-42FB-A982-5245C6379094} = {A1860A61-299A-4958-BA6E-CD4DFD3175B1}
+		{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9} = {F66AF891-0CA7-40D5-A418-D646A7EDE654}
+		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5} = {0A81809D-1DA5-4FA7-BC9B-D593C867A1CF}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{378BC2A7-5477-4FCE-993F-344232D0F64D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{378BC2A7-5477-4FCE-993F-344232D0F64D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{378BC2A7-5477-4FCE-993F-344232D0F64D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{378BC2A7-5477-4FCE-993F-344232D0F64D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BBFB291-0E7D-414A-8317-220DBDA1B219}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BBFB291-0E7D-414A-8317-220DBDA1B219}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BBFB291-0E7D-414A-8317-220DBDA1B219}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BBFB291-0E7D-414A-8317-220DBDA1B219}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9001103-6C61-42FB-A982-5245C6379094}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9001103-6C61-42FB-A982-5245C6379094}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9001103-6C61-42FB-A982-5245C6379094}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9001103-6C61-42FB-A982-5245C6379094}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
