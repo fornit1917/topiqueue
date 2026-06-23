@@ -48,6 +48,7 @@ internal class PgsqlDbMigrator : ITpqDbMigrator
                 ["${ensure_topic_created_function}"] = DbNames.EnsureTopicCreatedFunction(_settings),
                 ["${ensure_topic_has_segment_function}"] = DbNames.EnsureTopicHasSegmentFunction(_settings),
                 ["${create_topic_segment_function}"] = DbNames.CreateTopicSegmentFunction(_settings),
+                ["${try_delete_outdated_segments_function}"] = DbNames.TryDeleteOutdatedSegmentsFunction(_settings),
             },
         };
 

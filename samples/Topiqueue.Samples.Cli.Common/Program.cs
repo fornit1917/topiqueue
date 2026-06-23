@@ -20,6 +20,10 @@ public static class Program
         var tpqConfig = new TpqConfig()
             .UseLoggerFactory(loggerFactory)
             .UsePostgresql(dataSource)
+            .UseBackgroundServiceSettings(new TpqBackgroundServiceSettings
+            {
+                RotateSegmentsInterval = TimeSpan.FromSeconds(5),
+            })
             .UseTopics([
                 new TpqTopicSettings("topic_1", 8, TimeSpan.FromHours(1)),
                 new TpqTopicSettings("topic_2", 4, TimeSpan.FromDays(7)),
@@ -27,7 +31,8 @@ public static class Program
         
         var tpq = new TpqServices(tpqConfig);
         tpq.Initializer.Initialize();
-        
-        Console.WriteLine("Coming soon...");
+        tpq.BackgroundService.StartBackgroundService();
+
+        Console.ReadLine();
     }
 }

@@ -40,4 +40,9 @@ internal static class DbNames
     {
         return For("ensure_topic_has_segment", settings);
     }
+    
+    public static string TryDeleteOutdatedSegmentsFunction(TpqPostgresSettings settings)
+    {
+        return For("try_delete_outdated_segments", settings);
+    }
 }

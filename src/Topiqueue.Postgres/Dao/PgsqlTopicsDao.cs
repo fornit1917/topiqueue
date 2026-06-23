@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Npgsql;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Dao.Models;
@@ -15,6 +17,7 @@ internal class PgsqlTopicsDao : ITpqTopicsDao
 
     private readonly string _ensureTopicCreatedQuery;
     private readonly string _ensureHasSegmentQuery;
+    private readonly string _tryDeleteOutdatedSegmentsQuery;
 
     public PgsqlTopicsDao(NpgsqlDataSource dataSource, TpqPostgresSettings settings)
     {
@@ -27,6 +30,10 @@ internal class PgsqlTopicsDao : ITpqTopicsDao
 
         _ensureHasSegmentQuery = $@"
             SELECT * FROM {DbNames.EnsureTopicHasSegmentFunction(settings)}($1, $2)
+        ";
+
+        _tryDeleteOutdatedSegmentsQuery = $@"
+            SELECT * FROM {DbNames.TryDeleteOutdatedSegmentsFunction(settings)}($1, $2)
         ";
     }
 
@@ -88,5 +95,66 @@ internal class PgsqlTopicsDao : ITpqTopicsDao
         };
         
         return result;
+    }
+
+    public async Task<EnsureHasSegmentResult> EnsureTopicHasSegmentAsync(string topicName, TimeSpan threshold)
+    {
+        await using var conn = await _dataSource.OpenConnectionAsync();
+
+        await using var cmd = new NpgsqlCommand(_ensureHasSegmentQuery, conn);
+        cmd.Parameters.Add(new() { Value = topicName });  // 1
+        cmd.Parameters.Add(new() { Value = threshold });  // 2
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+        {
+            throw new UnexpectedDbResultException($"Could not receive result of EnsureTopicHasSegment for topic {topicName}");
+        }
+        var hasRow = await reader.ReadAsync();
+        if (!hasRow)
+        {
+            throw new UnexpectedDbResultException($"Could not receive result of EnsureTopicHasSegment for topic {topicName}");
+        }
+
+        var result = new EnsureHasSegmentResult
+        {
+            CreatedSegmentStart = reader.GetNullableDatetime("created_segment_start"),
+            CreatedSegmentEnd = reader.GetNullableDatetime("created_segment_end"),
+        };
+        
+        return result;
+    }
+
+    public async Task TryDeleteOutdatedSegmentsAsync(string topicName, TimeSpan threshold, List<DeletedSegment> output)
+    {
+        output.Clear();
+        
+        await using var conn = await _dataSource.OpenConnectionAsync();
+
+        await using var cmd = new NpgsqlCommand(_tryDeleteOutdatedSegmentsQuery, conn);
+        cmd.Parameters.Add(new() { Value = topicName });  // 1
+        cmd.Parameters.Add(new() { Value = threshold });  // 2
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (true)
+        {
+            if (!reader.HasRows)
+            {
+                break;
+            }
+
+            var hasRow = await reader.ReadAsync();
+            if (!hasRow)
+            {
+                break;
+            }
+
+            var deletedSegment = new DeletedSegment
+            {
+                SegmentStart = reader.GetDateTime(reader.GetOrdinal("deleted_segment_start")),
+                SegmentEnd = reader.GetDateTime(reader.GetOrdinal("deleted_segment_end")),
+            };
+            output.Add(deletedSegment);
+        }
     }
 }

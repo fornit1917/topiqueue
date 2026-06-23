@@ -12,21 +12,21 @@ internal class TpqInitializer : ITpqInitializer
     private readonly ILogger<TpqInitializer> _logger;
     
     private readonly IReadOnlyList<TpqTopicSettings> _topics;
-    private readonly TpqCheckSegmentsSettings _checkSegmentSettings;
+    private readonly TpqBackgroundServiceSettings _backgroundServiceSettings;
 
     public TpqInitializer(
         ITpqDbMigrator dbMigrator,
         ITpqTopicsDao topicsDao,
         ILogger<TpqInitializer> logger,
         IReadOnlyList<TpqTopicSettings> topics,
-        TpqCheckSegmentsSettings checkSegmentSettings)
+        TpqBackgroundServiceSettings backgroundServiceSettings)
     {
         _dbMigrator = dbMigrator;
         _topicsDao = topicsDao;
         _logger = logger;
         
         _topics = topics;
-        _checkSegmentSettings = checkSegmentSettings;
+        _backgroundServiceSettings = backgroundServiceSettings;
     }
 
     public void Initialize(bool runDbMigrations = true)
@@ -51,7 +51,7 @@ internal class TpqInitializer : ITpqInitializer
             
             var ensureHasSegmentResult = _topicsDao.EnsureTopicHasSegment(
                 topic.TopicName,
-                _checkSegmentSettings.MinimumRemainder);
+                _backgroundServiceSettings.SegmentBoundaryThreshold);
 
             if (ensureHasSegmentResult.CreatedSegmentStart.HasValue &&
                 ensureHasSegmentResult.CreatedSegmentEnd.HasValue)

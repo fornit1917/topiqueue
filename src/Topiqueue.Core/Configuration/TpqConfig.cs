@@ -15,7 +15,7 @@ public class TpqConfig : ICommonInfrastructure
     private ITpqDaoFactory? _daoFactory;
     private Func<ICommonInfrastructure, ITpqDaoFactory>? _createDaoFactory;
     
-    public TpqCheckSegmentsSettings CheckSegmentsSettings { get; private set; } = new();
+    public TpqBackgroundServiceSettings BackgroundServiceSettings { get; private set; } = new();
 
     public ITpqDaoFactory DaoFactory
     {
@@ -56,9 +56,9 @@ public class TpqConfig : ICommonInfrastructure
         return this;
     }
 
-    public TpqConfig UseCheckSegmentSettings(TpqCheckSegmentsSettings checkSegmentSettings)
+    public TpqConfig UseBackgroundServiceSettings(TpqBackgroundServiceSettings settings)
     {
-        CheckSegmentsSettings = checkSegmentSettings;
+        BackgroundServiceSettings = settings;
         return this;
     }
 }

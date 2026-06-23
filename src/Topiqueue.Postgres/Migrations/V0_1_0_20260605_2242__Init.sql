@@ -153,7 +153,13 @@ DECLARE
     new_start TIMESTAMPTZ;
     new_end TIMESTAMPTZ;
 BEGIN
-    PERFORM pg_advisory_lock(hashtext(p_topic_name));
+    SELECT topic_name, topic_seq_id, retention_interval INTO topic
+    FROM ${topic_table} WHERE topic_name = p_topic_name
+    FOR UPDATE;
+    
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
 
     SELECT segment_end FROM ${topic_segment_table} 
     WHERE topic_name = p_topic_name
@@ -165,13 +171,6 @@ BEGIN
         created_segment_start = NULL;
         created_segment_end = NULL;
         RETURN NEXT;
-        RETURN;
-    END IF;
-    
-    SELECT topic_name, topic_seq_id, retention_interval INTO topic 
-    FROM ${topic_table} WHERE topic_name = p_topic_name;
-
-    IF NOT FOUND THEN
         RETURN;
     END IF;
 
@@ -190,6 +189,60 @@ BEGIN
     created_segment_start = new_start;
     created_segment_end = new_end;
     RETURN NEXT;
+    RETURN;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION ${try_delete_outdated_segments_function}(
+    p_topic_name TEXT,
+    threshold INTERVAL
+)
+RETURNS TABLE (
+    deleted_segment_start TIMESTAMPTZ,
+    deleted_segment_end TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    topic RECORD;
+    segment RECORD;
+    schema_name TEXT;
+    topic_table_name TEXT;
+    segment_table_name TEXT;
+    query TEXT;
+BEGIN
+    SELECT topic_name, topic_seq_id, retention_interval INTO topic
+    FROM ${topic_table} WHERE topic_name = p_topic_name
+    FOR UPDATE SKIP LOCKED;
+    
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    schema_name := '${schema}';
+    topic_table_name := '${prefix}message' || '_' || topic.topic_seq_id::text;
+
+    FOR segment IN
+        DELETE FROM ${topic_segment_table}
+        WHERE topic_name = p_topic_name
+            AND segment_end < now() - threshold
+        RETURNING segment_start, segment_end
+    LOOP
+        segment_table_name := topic_table_name || '_' || to_char(segment.segment_start, 'YYYYMMDDHH24MI') || '_' || to_char(segment.segment_end, 'YYYYMMDDHH24MI');   
+        IF schema_name = '' THEN    
+            query := format('DROP TABLE IF EXISTS %I', segment_table_name);
+        ELSE
+            query := format('DROP TABLE IF EXISTS %I.%I', schema_name, segment_table_name);
+        END IF;
+    
+        EXECUTE query;
+    
+        deleted_segment_start := segment.segment_start;
+        deleted_segment_end := segment.segment_end;
+        RETURN NEXT;
+    END LOOP;
+    
     RETURN;
 END;
 $$;
