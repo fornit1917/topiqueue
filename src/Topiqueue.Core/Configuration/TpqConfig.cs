@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Exceptions;
 using Topiqueue.Core.Logging;
+using Topiqueue.Core.Messages;
 
 namespace Topiqueue.Core.Configuration;
 
@@ -28,6 +30,10 @@ public class TpqConfig : ICommonInfrastructure
     }
     
     public ILoggerFactory LoggerFactory { get; private set; } = EmptyLoggerFactory.Instance;
+
+    public ITpqMessageDataSerializer Serializer { get; private set; } =
+        new SystemTextJsonSerializer(new JsonSerializerOptions());
+    
     public IReadOnlyList<TpqTopicSettings> Topics => _topics;
 
     public TpqConfig UseLoggerFactory(ILoggerFactory loggerFactory)
@@ -60,5 +66,16 @@ public class TpqConfig : ICommonInfrastructure
     {
         BackgroundServiceSettings = settings;
         return this;
+    }
+
+    public TpqConfig UseMessageDataSerializer(ITpqMessageDataSerializer serializer)
+    {
+        Serializer = serializer;
+        return this;
+    }
+
+    public TpqConfig UseSystemTextJsonMessageDataSerializer(JsonSerializerOptions options)
+    {
+        return UseMessageDataSerializer(new SystemTextJsonSerializer(options));
     }
 }

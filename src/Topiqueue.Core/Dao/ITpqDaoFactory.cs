@@ -4,4 +4,5 @@ public interface ITpqDaoFactory
 {
     ITpqDbMigrator CreateMigrator();
     ITpqTopicsDao CreateTopicsDao();
+    ITpqMessagesDao CreateMessagesDao();
 }

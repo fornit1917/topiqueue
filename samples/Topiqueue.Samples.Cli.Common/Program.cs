@@ -5,6 +5,7 @@ using Topiqueue.Core;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Postgres.Configuration;
+using Topiqueue.Samples.Cli.Common.Messages;
 
 namespace Topiqueue.Samples.Cli.Common;
 
@@ -33,6 +34,18 @@ public static class Program
         tpq.Initializer.Initialize();
         tpq.BackgroundService.StartBackgroundService();
 
+        for (int i = 1; i <= 20; i++)
+        {
+            var message = new DemoMessageData
+            {
+                Id = i,
+                Value = $"Value {i}"
+            };
+            var partitionKey = $"key_{i}"; 
+            tpq.Producer.Produce("topic_1", message, partitionKey);            
+        }
+        Console.WriteLine("Produced 20 messages");
+        
         Console.ReadLine();
     }
 }

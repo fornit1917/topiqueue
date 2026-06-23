@@ -24,4 +24,11 @@ internal static class ValidationExtensions
             ? throw new ArgumentException($"Value of {argumentName} cannot be empty") 
             : value;
     }
+
+    public static string EnsureMaxLength(this string value, int maxLength, string argumentName)
+    {
+        return value.Length > maxLength
+            ? throw new ArgumentException($"Length of of {argumentName} cannot be greater than {maxLength}")
+            : value;
+    }
 }

@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.Samples.Cli.Commo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.Tests.Core", "tests\Topiqueue.Tests.Core\Topiqueue.Tests.Core.csproj", "{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topiqueue.TestsUtils", "tests\Topiqueue.TestsUtils\Topiqueue.TestsUtils.csproj", "{BE94B24E-C19D-4DD4-96DB-A436B7569994}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,7 @@ Global
 		{B9001103-6C61-42FB-A982-5245C6379094} = {A1860A61-299A-4958-BA6E-CD4DFD3175B1}
 		{0B5F0AE2-2CB6-4939-B07B-EB88058C35C9} = {F66AF891-0CA7-40D5-A418-D646A7EDE654}
 		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5} = {0A81809D-1DA5-4FA7-BC9B-D593C867A1CF}
+		{BE94B24E-C19D-4DD4-96DB-A436B7569994} = {0A81809D-1DA5-4FA7-BC9B-D593C867A1CF}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{378BC2A7-5477-4FCE-993F-344232D0F64D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -51,5 +54,9 @@ Global
 		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C197C8F-A67C-49F7-9D66-D20A4E1C26A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE94B24E-C19D-4DD4-96DB-A436B7569994}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE94B24E-C19D-4DD4-96DB-A436B7569994}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE94B24E-C19D-4DD4-96DB-A436B7569994}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE94B24E-C19D-4DD4-96DB-A436B7569994}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

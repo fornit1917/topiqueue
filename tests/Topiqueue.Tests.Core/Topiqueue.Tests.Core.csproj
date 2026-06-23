@@ -27,6 +27,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Topiqueue.Core\Topiqueue.Core.csproj" />
+      <ProjectReference Include="..\Topiqueue.TestsUtils\Topiqueue.TestsUtils.csproj" />
     </ItemGroup>
 
 </Project>

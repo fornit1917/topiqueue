@@ -27,4 +27,9 @@ internal class PgsqlDaoFactory : ITpqDaoFactory
     {
         return new PgsqlTopicsDao(_dataSource, _settings);
     }
+
+    public ITpqMessagesDao CreateMessagesDao()
+    {
+        return new PgsqlMessagesDao(_dataSource, _settings);
+    }
 }
