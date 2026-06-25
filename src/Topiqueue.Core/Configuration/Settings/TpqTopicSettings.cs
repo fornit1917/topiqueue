@@ -12,8 +12,7 @@ public class TpqTopicSettings
     public TpqTopicSettings(string topicName, int partitionsCount, TimeSpan retentionInterval)
     {
         TopicName = topicName
-            .EnsureNotEmpty(nameof(topicName))
-            .EnsureMaxLength(64, nameof(topicName));
+            .EnsureNotEmpty(nameof(topicName));
         
         PartitionsCount = partitionsCount.EnsureGreaterThan(0, nameof(partitionsCount));
         

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
+using Topiqueue.Core.Messages.Interfaces;
 
-namespace Topiqueue.Core.Messages;
+namespace Topiqueue.Core.Messages.Services;
 
 public class SystemTextJsonSerializer : ITpqMessageDataSerializer
 {

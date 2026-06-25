@@ -8,22 +8,22 @@ using Topiqueue.Core.Dao;
 using Topiqueue.Core.Dao.Models;
 using Topiqueue.Core.Helpers;
 
-namespace Topiqueue.Core.BackgroundService.RotateSegments;
+namespace Topiqueue.Core.BackgroundService.SegmentsRotation;
 
-internal class RotateSegmentsService : IRotateSegmentsService
+internal class SegmentsRotationService : ISegmentsRotationService
 {
     private readonly ITpqTopicsDao _tpqTopicsDao;
     private readonly ITimerService _timerService;
-    private readonly ILogger<RotateSegmentsService> _logger;
+    private readonly ILogger<SegmentsRotationService> _logger;
     private readonly IReadOnlyList<TpqTopicSettings> _tpqTopicSettings;
     private readonly TpqBackgroundServiceSettings _settings;
     
     private readonly List<DeletedSegment> _deletedSegments;
 
-    public RotateSegmentsService(
+    public SegmentsRotationService(
         ITpqTopicsDao tpqTopicsDao,
         ITimerService timerService,
-        ILogger<RotateSegmentsService> logger,
+        ILogger<SegmentsRotationService> logger,
         IReadOnlyList<TpqTopicSettings> tpqTopicSettings,
         TpqBackgroundServiceSettings settings)
     {

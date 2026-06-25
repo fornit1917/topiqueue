@@ -7,24 +7,27 @@ using Topiqueue.Core.Dao;
 using Topiqueue.Core.Exceptions;
 using Topiqueue.Core.Logging;
 using Topiqueue.Core.Messages;
+using Topiqueue.Core.Messages.Interfaces;
+using Topiqueue.Core.Messages.Services;
 
 namespace Topiqueue.Core.Configuration;
 
 public class TpqConfig : ICommonInfrastructure
 {
     private readonly List<TpqTopicSettings> _topics = new();
+    private readonly List<TpqConsumerSettings> _consumers = new();
     
-    private ITpqDaoFactory? _daoFactory;
-    private Func<ICommonInfrastructure, ITpqDaoFactory>? _createDaoFactory;
+    private ITpqDao? _dao;
+    private Func<ICommonInfrastructure, ITpqDao>? _createDao;
     
     public TpqBackgroundServiceSettings BackgroundServiceSettings { get; private set; } = new();
 
-    public ITpqDaoFactory DaoFactory
+    public ITpqDao Dao
     {
         get
         {
-            _daoFactory ??= _createDaoFactory?.Invoke(this);
-            return _daoFactory 
+            _dao ??= _createDao?.Invoke(this);
+            return _dao 
                    ?? throw new InvalidTopiqueueConfigException("Dao factory not specified. Call TpqConfig.UseDaoFactory to fix it.");
         }
     }
@@ -35,6 +38,8 @@ public class TpqConfig : ICommonInfrastructure
         new SystemTextJsonSerializer(new JsonSerializerOptions());
     
     public IReadOnlyList<TpqTopicSettings> Topics => _topics;
+    
+    public IReadOnlyList<TpqConsumerSettings> Consumers => _consumers;
 
     public TpqConfig UseLoggerFactory(ILoggerFactory loggerFactory)
     {
@@ -42,17 +47,17 @@ public class TpqConfig : ICommonInfrastructure
         return this;
     }
     
-    public TpqConfig UseDaoFactory(ITpqDaoFactory daoFactory)
+    public TpqConfig UseDataAccessObjects(ITpqDao dao)
     {
-        _daoFactory = daoFactory;
-        _createDaoFactory = null;
+        _dao = dao;
+        _createDao = null;
         return this;
     }
 
-    public TpqConfig UseDaoFactory(Func<ICommonInfrastructure, ITpqDaoFactory> createDaoFactory)
+    public TpqConfig UseDataAccessObjects(Func<ICommonInfrastructure, ITpqDao> createDao)
     {
-        _daoFactory = null;
-        _createDaoFactory = createDaoFactory;
+        _dao = null;
+        _createDao = createDao;
         return this;
     }
     
@@ -77,5 +82,11 @@ public class TpqConfig : ICommonInfrastructure
     public TpqConfig UseSystemTextJsonMessageDataSerializer(JsonSerializerOptions options)
     {
         return UseMessageDataSerializer(new SystemTextJsonSerializer(options));
+    }
+
+    public TpqConfig UseConsumers(IReadOnlyList<TpqConsumerSettings> consumers)
+    {
+        _consumers.AddRange(consumers);
+        return this;
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Topiqueue.Core.Messages.Models;
 
-namespace Topiqueue.Core.Messages;
+namespace Topiqueue.Core.Messages.Interfaces;
 
 public interface ITpqMessageFactory
 {

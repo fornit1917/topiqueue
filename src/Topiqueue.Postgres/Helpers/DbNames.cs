@@ -11,38 +11,27 @@ internal static class DbNames
             : $"\"{settings.Schema}\".\"{settings.Prefix}{name}\"";
     }
 
-    public static string MessageTable(TpqPostgresSettings settings)
-    {
-        return For("message", settings);
-    }
+    public static string MessageTable(TpqPostgresSettings settings) => For("message", settings);
 
-    public static string TopicTable(TpqPostgresSettings settings)
-    {
-        return For("topic", settings);
-    }
+    public static string TopicTable(TpqPostgresSettings settings) => For("topic", settings);
 
-    public static string TopicSegmentTable(TpqPostgresSettings settings)
-    {
-        return For("topic_segment", settings);
-    }
+    public static string TopicSegmentTable(TpqPostgresSettings settings) => For("topic_segment", settings);
+
+    public static string ServerTable(TpqPostgresSettings settings) => For("server", settings);
+
+    public static string ServerConsumerTable(TpqPostgresSettings settings) => For("server_consumer", settings);
+
+    public static string TopicConsumerTable(TpqPostgresSettings settings) => For("topic_consumer", settings);
 
     public static string EnsureTopicCreatedFunction(TpqPostgresSettings settings)
-    {
-        return For("ensure_topic_created", settings);
-    }
-    
+        => For("ensure_topic_created", settings);
+
     public static string CreateTopicSegmentFunction(TpqPostgresSettings settings)
-    {
-        return For("create_topic_segment", settings);
-    }
-    
+        => For("create_topic_segment", settings);
+
     public static string EnsureTopicHasSegmentFunction(TpqPostgresSettings settings)
-    {
-        return For("ensure_topic_has_segment", settings);
-    }
-    
+        => For("ensure_topic_has_segment", settings);
+
     public static string TryDeleteOutdatedSegmentsFunction(TpqPostgresSettings settings)
-    {
-        return For("try_delete_outdated_segments", settings);
-    }
+        => For("try_delete_outdated_segments", settings);
 }

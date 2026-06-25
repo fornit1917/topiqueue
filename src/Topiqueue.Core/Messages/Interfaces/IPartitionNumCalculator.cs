@@ -1,4 +1,4 @@
-﻿namespace Topiqueue.Core.Messages;
+﻿namespace Topiqueue.Core.Messages.Interfaces;
 
 internal interface IPartitionNumCalculator
 {

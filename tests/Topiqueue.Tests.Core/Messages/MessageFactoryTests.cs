@@ -3,7 +3,9 @@ using NSubstitute;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Messages;
+using Topiqueue.Core.Messages.Interfaces;
 using Topiqueue.Core.Messages.Models;
+using Topiqueue.Core.Messages.Services;
 using Topiqueue.TestsUtils.Messages;
 
 namespace Topiqueue.Tests.Core.Messages;

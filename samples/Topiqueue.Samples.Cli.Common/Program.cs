@@ -24,10 +24,24 @@ public static class Program
             .UseBackgroundServiceSettings(new TpqBackgroundServiceSettings
             {
                 RotateSegmentsInterval = TimeSpan.FromSeconds(5),
+                HeartbeatInterval = TimeSpan.FromSeconds(5),
+                HeartbeatOutdatedThreshold = TimeSpan.FromSeconds(10)
             })
             .UseTopics([
                 new TpqTopicSettings("topic_1", 8, TimeSpan.FromHours(1)),
                 new TpqTopicSettings("topic_2", 4, TimeSpan.FromDays(7)),
+            ])
+            .UseConsumers([
+                new TpqConsumerSettings
+                {
+                    TopicName = "topic_1",
+                    ConsumerGroupId = "topic_1_consumer_1",
+                },
+                new TpqConsumerSettings
+                {
+                    TopicName = "topic_2",
+                    ConsumerGroupId = "topic_2_consumer_1",
+                },
             ]);
         
         var tpq = new TpqServices(tpqConfig);

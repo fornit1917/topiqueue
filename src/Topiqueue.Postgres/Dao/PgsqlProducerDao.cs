@@ -7,12 +7,12 @@ using Topiqueue.Postgres.Helpers;
 
 namespace Topiqueue.Postgres.Dao;
 
-internal class PgsqlMessagesDao : ITpqMessagesDao
+internal class PgsqlProducerDao : ITpqProducerDao
 {
     private readonly NpgsqlDataSource _dataSource;
     private readonly string _insertQuery;
 
-    public PgsqlMessagesDao(NpgsqlDataSource dataSource, TpqPostgresSettings settings)
+    public PgsqlProducerDao(NpgsqlDataSource dataSource, TpqPostgresSettings settings)
     {
         _dataSource = dataSource;
         

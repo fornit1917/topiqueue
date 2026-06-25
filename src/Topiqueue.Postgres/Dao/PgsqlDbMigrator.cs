@@ -44,6 +44,9 @@ internal class PgsqlDbMigrator : ITpqDbMigrator
                 ["${message_table}"] = DbNames.MessageTable(_settings),
                 ["${topic_table}"] = DbNames.TopicTable(_settings),
                 ["${topic_segment_table}"] = DbNames.TopicSegmentTable(_settings),
+                ["${topic_consumer_table}"] = DbNames.TopicConsumerTable(_settings),
+                ["${server_table}"] = DbNames.ServerTable(_settings),
+                ["${server_consumer_table}"] = DbNames.ServerConsumerTable(_settings),
                 
                 ["${ensure_topic_created_function}"] = DbNames.EnsureTopicCreatedFunction(_settings),
                 ["${ensure_topic_has_segment_function}"] = DbNames.EnsureTopicHasSegmentFunction(_settings),

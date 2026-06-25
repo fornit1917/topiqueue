@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Topiqueue.Core.Messages;
+using Topiqueue.Core.Messages.Interfaces;
 
 namespace Topiqueue.Core.Producer;
 

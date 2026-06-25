@@ -8,6 +8,10 @@ public class TpqBackgroundServiceSettings
     private readonly TimeSpan _dbErrorPause = TimeSpan.FromSeconds(10);
     private readonly TimeSpan _rotateSegmentsInterval = TimeSpan.FromMinutes(1);
     private readonly TimeSpan _segmentBoundaryThreshold = TimeSpan.FromMinutes(5);
+    private readonly TimeSpan _heartbeatInterval = TimeSpan.FromSeconds(10);
+    private readonly TimeSpan _heartbeatOutdatedThreshold = TimeSpan.FromSeconds(180);
+    private readonly int _topicsReaderWorkers = 1;
+    private readonly int _messagesHandlerWorkers = 1;
 
     public TimeSpan RotateSegmentsInterval
     {
@@ -25,5 +29,29 @@ public class TpqBackgroundServiceSettings
     {
         get => _dbErrorPause;
         init => _dbErrorPause = value.EnsureGreaterThan(TimeSpan.Zero, nameof(DbErrorPause));
+    }
+
+    public TimeSpan HeartbeatInterval
+    {
+        get => _heartbeatInterval;
+        init => _heartbeatInterval = value.EnsureGreaterThan(TimeSpan.Zero, nameof(HeartbeatInterval));
+    }
+
+    public TimeSpan HeartbeatOutdatedThreshold
+    {
+        get => _heartbeatOutdatedThreshold;
+        init => _heartbeatOutdatedThreshold = value.EnsureGreaterThan(TimeSpan.Zero, nameof(HeartbeatOutdatedThreshold));
+    }
+
+    public int TopicsReaderWorkers
+    {
+        get => _topicsReaderWorkers;
+        init => _topicsReaderWorkers = value.EnsureGreaterThan(0, nameof(TopicsReaderWorkers));
+    }
+
+    public int MessagesHandlerWorkers
+    {
+        get => _messagesHandlerWorkers;
+        init => _messagesHandlerWorkers = value.EnsureGreaterThan(0, nameof(MessagesHandlerWorkers));
     }
 }

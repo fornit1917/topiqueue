@@ -1,8 +1,9 @@
 ﻿using System;
 using System.IO.Hashing;
 using System.Text;
+using Topiqueue.Core.Messages.Interfaces;
 
-namespace Topiqueue.Core.Messages;
+namespace Topiqueue.Core.Messages.Services;
 
 internal class PartitionNumCalculator : IPartitionNumCalculator
 {

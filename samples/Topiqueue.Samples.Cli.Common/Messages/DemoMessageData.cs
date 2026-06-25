@@ -1,4 +1,5 @@
 ﻿using Topiqueue.Core.Messages;
+using Topiqueue.Core.Messages.Interfaces;
 
 namespace Topiqueue.Samples.Cli.Common.Messages;
 

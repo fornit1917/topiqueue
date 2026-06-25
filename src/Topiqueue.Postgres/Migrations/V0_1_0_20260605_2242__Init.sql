@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS ${message_table}
     topic_name text NOT NULL,
     partition_num INT NOT NULL,
     tx_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
-    seq_id bigint NOT NULL DEFAULT nextval('"${prefix}message_seq"'),
+    seq_id BIGINT NOT NULL DEFAULT nextval('"${prefix}message_seq"'),
     created_at timestamptz NOT NULL DEFAULT now(),
     partition_key text DEFAULT NULL,
     message_type text NOT NULL,
@@ -36,6 +36,31 @@ CREATE TABLE IF NOT EXISTS ${message_table}
 CREATE INDEX IF NOT EXISTS "${prefix}message_key_idx" 
     ON ${message_table}(partition_num, tx_id, seq_id);
 
+CREATE TABLE IF NOT EXISTS ${server_table}
+(
+    id TEXT NOT NULL PRIMARY KEY,
+    heartbeat_ts TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ${server_consumer_table}
+(
+    server_id TEXT NOT NULL REFERENCES ${server_table}(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    topic_name TEXT NOT NULL,
+    consumer_group_id TEXT NOT NULL,
+    PRIMARY KEY (server_id, topic_name, consumer_group_id)
+);
+
+CREATE TABLE IF NOT EXISTS ${topic_consumer_table}
+(
+    topic_name TEXT NOT NULL,
+    consumer_group_id TEXT NOT NULL,
+    partition_num INT NOT NULL,
+    server_id TEXT DEFAULT NULL REFERENCES ${server_table}(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    last_processed_tx_id xid8 DEFAULT 0::text::xid8,
+    last_processed_seq_id BIGINT DEFAULT 0,
+    last_processed_created_at TIMESTAMPTZ DEFAULT '0001-01-01T12:00:00Z'::timestamptz,
+    PRIMARY KEY (topic_name, consumer_group_id, partition_num)
+);
 
 CREATE OR REPLACE FUNCTION ${ensure_topic_created_function}(
     p_topic_name TEXT,

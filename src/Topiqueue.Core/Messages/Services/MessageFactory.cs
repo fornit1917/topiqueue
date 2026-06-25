@@ -1,7 +1,8 @@
 ﻿using Topiqueue.Core.Configuration;
+using Topiqueue.Core.Messages.Interfaces;
 using Topiqueue.Core.Messages.Models;
 
-namespace Topiqueue.Core.Messages;
+namespace Topiqueue.Core.Messages.Services;
 
 internal class MessageFactory : ITpqMessageFactory
 {

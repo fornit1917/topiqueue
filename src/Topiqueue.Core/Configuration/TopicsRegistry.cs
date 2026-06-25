@@ -25,4 +25,9 @@ internal class TopicsRegistry : ITopicsRegistry
             ? topic 
             : throw new UnknownTopicException(topicName);
     }
+
+    public IEnumerable<TpqTopicSettings> GetAll()
+    {
+        return _topicsByName.Values;
+    }
 }

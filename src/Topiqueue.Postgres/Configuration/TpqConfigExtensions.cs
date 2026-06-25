@@ -11,7 +11,7 @@ public static class TpqConfigExtensions
         TpqPostgresSettings? settings = null)
     {
         settings ??= new TpqPostgresSettings();
-        config.UseDaoFactory(commonInfra => new PgsqlDaoFactory(dataSource, settings, commonInfra.LoggerFactory));
+        config.UseDataAccessObjects(commonInfra => new PgsqlDao(dataSource, settings, commonInfra.LoggerFactory));
         return config;
     }
 }
