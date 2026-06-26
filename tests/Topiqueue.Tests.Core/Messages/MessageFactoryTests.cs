@@ -1,4 +1,5 @@
-﻿using AwesomeAssertions;
+﻿using System;
+using AwesomeAssertions;
 using NSubstitute;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
@@ -32,7 +33,7 @@ public class MessageFactoryTests
         var expectedPartitionNum = 4;
         var partitionKey = "partitionKey";
         _serializer.SerializeToText(messageData).Returns(expectedSerializedData);
-        _topicsRegistry.GetRequired(topic.TopicName).Returns(topic);
+        _topicsRegistry.Get(topic.TopicName).Returns(topic);
         _partitionNumCalculator.GetPartitionNum(partitionKey, topic.PartitionsCount).Returns(expectedPartitionNum);
         
         var result = _sut.Create(topic.TopicName, messageData, partitionKey);

@@ -6,52 +6,46 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
 using Topiqueue.Core.BackgroundService.Consumers.Models;
+using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Dao;
+using Topiqueue.Core.Helpers;
 
 namespace Topiqueue.Core.BackgroundService.Consumers.Services;
 
 internal class TopicsReaderService : ITopicsReaderService
 {
     private readonly ChannelReader<TopicsReaderCommand> _channelReader;
-    private readonly ITopicsReaderCommandBus _topicsReaderCommandBus;
-    private readonly IMessagesHandlerCommandBus _messagesHandlerCommandBus;
+    private readonly IConsumersContext _context;
     private readonly ITpqConsumerDao _consumerDao;
+    private readonly ITimerService _timerService;
     private readonly ILogger<TopicsReaderService> _logger;
-    private readonly IReadOnlyList<TpqConsumerSettings> _consumers;
-    private readonly TpqBackgroundServiceSettings _backgroundServiceSettings;
+    private readonly TpqBackgroundServiceSettings _settings;
     private readonly string _serverId;
 
     public TopicsReaderService(
         ChannelReader<TopicsReaderCommand> channelReader,
-        ITopicsReaderCommandBus topicsReaderCommandBus,
-        IMessagesHandlerCommandBus messagesHandlerCommandBus,
+        IConsumersContext context,
         ITpqConsumerDao consumerDao,
+        ITimerService timerService,
         ILogger<TopicsReaderService> logger,
-        IReadOnlyList<TpqConsumerSettings> consumers,
-        TpqBackgroundServiceSettings backgroundServiceSettings,
+        TpqBackgroundServiceSettings settings,
         string serverId)
     {
         _channelReader = channelReader;
-        _topicsReaderCommandBus = topicsReaderCommandBus;
-        _messagesHandlerCommandBus = messagesHandlerCommandBus;
+        _context = context;
         _consumerDao = consumerDao;
+        _timerService = timerService;
         _logger = logger;
-        _consumers = consumers;
-        _backgroundServiceSettings = backgroundServiceSettings;
+        _settings = settings;
         _serverId = serverId;
     }
 
     public void Run(CancellationToken cancellationToken)
     {
-        for (int i = 0; i < _backgroundServiceSettings.TopicsReaderWorkers; i++)
+        for (int i = 0; i < _settings.TopicsReaderWorkers; i++)
         {
             _ = Task.Run(async () => await ReadChannel(cancellationToken), cancellationToken);
-        }
-
-        foreach (var consumer in _consumers)
-        {
-            _topicsReaderCommandBus.SendTryCapturePartitionsCommand(consumer, consumer.TryCapturePartitionsOnStart);
         }
     }
 
@@ -73,12 +67,33 @@ internal class TopicsReaderService : ITopicsReaderService
                 break;
             }
 
-            while (_channelReader.TryRead(out var command))
+            while (!cancellationToken.IsCancellationRequested && _channelReader.TryRead(out var command))
             {
-                if (command.Type == TopicsReaderCommandType.TryCapturePartitions)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    await HandleTryCapturePartitions(command, partitionsNumbers);
+                    try
+                    {
+                        switch (command.Type)
+                        {
+                            case TopicsReaderCommandType.TryCapturePartitions:
+                                await HandleTryCapturePartitions(command, partitionsNumbers);
+                                break;
+                            case TopicsReaderCommandType.ReleasePartitions:
+                                await HandleTryReleasePartitions(command, partitionsNumbers);
+                                break;
+                        }
+
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, "Error while handle TopicsReaderCommand with type {CommandType}. The next attempt will be in {DbErrorPause}",
+                            command.Type.ToString(), _settings.DbErrorPause);
+                        
+                        await _timerService.TryDelay(_settings.DbErrorPause, cancellationToken);
+                    }
                 }
+                
             }
         }
     }
@@ -90,8 +105,26 @@ internal class TopicsReaderService : ITopicsReaderService
         
         foreach (var partitionNum in capturedPartitionNumbers)
         {
-            _logger.LogInformation("Partition {PartitionNum} of topic {TopicName} in group {GroupId} has been captured by server {ServerId}",
-                partitionNum, command.Consumer.TopicName, command.Consumer.ConsumerGroupId, _serverId);
+            if (_context.TrySetCaptured(command.Consumer, partitionNum))
+            {
+                _logger.LogInformation("Partition {PartitionNum} of topic {TopicName} in group {GroupId} has been captured by server {ServerId}",
+                    partitionNum, command.Consumer.TopicName, command.Consumer.ConsumerGroupId, _serverId);                
+            }
         }
+    }
+
+    private async Task HandleTryReleasePartitions(TopicsReaderCommand command, List<int> releasedPartitionNumbers)
+    {
+        await _consumerDao.TryReleasePartitionsAsync(_serverId, command.Consumer, command.PartitionsCount,
+            releasedPartitionNumbers);
+        
+        foreach (var partitionNum in releasedPartitionNumbers)
+        {
+            if (_context.TrySetReleased(command.Consumer, partitionNum))
+            {
+                _logger.LogInformation("Partition {PartitionNum} of topic {TopicName} in group {GroupId} has been released by server {ServerId}",
+                    partitionNum, command.Consumer.TopicName, command.Consumer.ConsumerGroupId, _serverId);                
+            }
+        }    
     }
 }

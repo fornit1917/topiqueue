@@ -6,6 +6,6 @@ namespace Topiqueue.Core.Configuration;
 public interface ITopicsRegistry
 {
     TpqTopicSettings? GetOrDefault(string topicName);
-    TpqTopicSettings GetRequired(string topicName);
+    TpqTopicSettings Get(string topicName);
     IEnumerable<TpqTopicSettings> GetAll();
 }

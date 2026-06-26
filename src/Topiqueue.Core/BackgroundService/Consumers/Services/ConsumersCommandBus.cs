@@ -1,21 +1,23 @@
-﻿using System.Threading.Channels;
+﻿using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
 using Topiqueue.Core.BackgroundService.Consumers.Models;
+using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 using Topiqueue.Core.Configuration.Settings;
 
 namespace Topiqueue.Core.BackgroundService.Consumers.Services;
 
-internal class TopicsReaderCommandBus : ITopicsReaderCommandBus
+internal class ConsumersCommandBus : IConsumersCommandBus
 {
     private readonly ChannelWriter<TopicsReaderCommand> _channelWriter;
 
-    public TopicsReaderCommandBus(ChannelWriter<TopicsReaderCommand> channelWriter)
+    public ConsumersCommandBus(ChannelWriter<TopicsReaderCommand> channelWriter)
     {
         _channelWriter = channelWriter;
     }
 
-    public ValueTask SendTryCapturePartitionsCommand(TpqConsumerSettings consumer, int partitionCount)
+    public ValueTask SendTryCapturePartitions(TpqConsumerSettings consumer, int partitionCount)
     {
         var command = new TopicsReaderCommand
         {
@@ -26,7 +28,7 @@ internal class TopicsReaderCommandBus : ITopicsReaderCommandBus
         return _channelWriter.WriteAsync(command);
     }
 
-    public ValueTask SendReleasePartitionsCommand(TpqConsumerSettings consumer, int partitionCount)
+    public ValueTask SendReleasePartitions(TpqConsumerSettings consumer, int partitionCount)
     {
         var command = new TopicsReaderCommand
         {

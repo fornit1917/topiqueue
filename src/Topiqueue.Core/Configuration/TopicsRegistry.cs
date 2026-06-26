@@ -19,7 +19,7 @@ internal class TopicsRegistry : ITopicsRegistry
         return _topicsByName.GetValueOrDefault(topicName);
     }
 
-    public TpqTopicSettings GetRequired(string topicName)
+    public TpqTopicSettings Get(string topicName)
     {
         return _topicsByName.TryGetValue(topicName, out var topic) 
             ? topic 

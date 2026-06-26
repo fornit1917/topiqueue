@@ -1,6 +1,6 @@
 ﻿using Topiqueue.Core.Configuration.Settings;
 
-namespace Topiqueue.Core.BackgroundService.Consumers.Models;
+namespace Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 
 internal struct TopicsReaderCommand
 {

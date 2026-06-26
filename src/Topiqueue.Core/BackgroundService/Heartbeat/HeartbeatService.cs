@@ -61,6 +61,8 @@ internal class HeartbeatService : IHeartbeatService
             {
                 _logger.LogError(e, "Error in HeartbeatService. The next attempt will be in {DbErrorPause}",
                     _settings.DbErrorPause);
+                
+                await _timerService.TryDelay(_settings.DbErrorPause, cancellationToken);
             }
         }
     }

@@ -4,6 +4,7 @@ using Topiqueue.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using Topiqueue.Core.BackgroundService;
 using Topiqueue.Core.BackgroundService.Consumers.Models;
+using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 using Topiqueue.Core.BackgroundService.Consumers.Services;
 using Topiqueue.Core.BackgroundService.Heartbeat;
 using Topiqueue.Core.BackgroundService.SegmentsRotation;
@@ -66,8 +67,7 @@ public class TpqServices
             AllowSynchronousContinuations = false,
         };
         var messagesHandlerChannel = Channel.CreateUnbounded<MessagesHandlerCommand>(messagesHandlerChannelOptions);
-        var messagesHandlerCommandBus = new MessagesHandlerCommandBus();
-
+        
         var topicsReaderChannelOptions = new UnboundedChannelOptions()
         {
             SingleWriter = false,
@@ -75,20 +75,31 @@ public class TpqServices
             AllowSynchronousContinuations = false
         };
         var topicsReaderChannel = Channel.CreateUnbounded<TopicsReaderCommand>(topicsReaderChannelOptions);
-        var topicsReaderCommandBus = new TopicsReaderCommandBus(topicsReaderChannel.Writer);
+        
+        var commandBus = new ConsumersCommandBus(topicsReaderChannel.Writer);
+        
+        var consumersContext = new ConsumersContext(topicsRegistry, config.Consumers, commandBus);
+        
         var topicsReaderService = new TopicsReaderService(
             topicsReaderChannel.Reader,
-            topicsReaderCommandBus,
-            messagesHandlerCommandBus,
+            consumersContext,
             config.Dao.ConsumerDao,
+            TimerService.Instance,
             config.LoggerFactory.CreateLogger<TopicsReaderService>(),
-            config.Consumers,
             config.BackgroundServiceSettings,
             serverId);
+        
+        var partitionsBalancerService = new PartitionsBalancerService(
+            consumersContext,
+            config.Dao.ServersDao,
+            TimerService.Instance,
+            config.LoggerFactory.CreateLogger<PartitionsBalancerService>(),
+            config.BackgroundServiceSettings);
 
         BackgroundService = new TpqBackgroundService(
             rotateSegmentsService,
             heartbeatService,
+            partitionsBalancerService,
             topicsReaderService);        
     }
 }

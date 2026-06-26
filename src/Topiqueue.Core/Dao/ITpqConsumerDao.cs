@@ -11,6 +11,7 @@ public interface ITpqConsumerDao
     
     Task TryCapturePartitionsAsync(string serverId, TpqConsumerSettings consumer, int partitionCount,
         List<int> capturedPartitions);
-    
-    Task ReleasePartitionsAsync(TpqConsumerSettings consumer, int partitionCount);
+
+    Task TryReleasePartitionsAsync(string serverId, TpqConsumerSettings consumer, int partitionCount,
+        List<int> releasedPartitions);
 }

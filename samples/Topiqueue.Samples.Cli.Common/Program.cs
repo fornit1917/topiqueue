@@ -36,11 +36,13 @@ public static class Program
                 {
                     TopicName = "topic_1",
                     ConsumerGroupId = "topic_1_consumer_1",
+                    TryCapturePartitionsOnStart = 4
                 },
                 new TpqConsumerSettings
                 {
                     TopicName = "topic_2",
                     ConsumerGroupId = "topic_2_consumer_1",
+                    TryCapturePartitionsOnStart = 2
                 },
             ]);
         

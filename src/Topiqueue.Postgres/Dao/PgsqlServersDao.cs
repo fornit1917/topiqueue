@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Npgsql;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Dao;
+using Topiqueue.Core.Exceptions;
 using Topiqueue.Postgres.Configuration;
 using Topiqueue.Postgres.Helpers;
 
@@ -17,6 +18,7 @@ internal class PgsqlServersDao : ITpqServersDao
     private readonly string _insertServerConsumersQuery;
     private readonly string _deleteOutdatedQuery;
     private readonly string _updateHeartbeatTsQuery;
+    private readonly string _getServersCountInGroupQuery;
 
     public PgsqlServersDao(NpgsqlDataSource dataSource, TpqPostgresSettings settings)
     {
@@ -42,6 +44,15 @@ internal class PgsqlServersDao : ITpqServersDao
         ";
 
         _updateHeartbeatTsQuery = $@"UPDATE {DbNames.ServerTable(settings)} SET heartbeat_ts = now() WHERE id = $1";
+
+        _getServersCountInGroupQuery = $@"
+            SELECT count(1) FROM {DbNames.ServerConsumerTable(settings)} sc
+            INNER JOIN {DbNames.ServerTable(settings)} s ON s.id = sc.server_id
+            WHERE 
+                sc.topic_name = $1
+                AND sc.consumer_group_id = $2
+                AND s.heartbeat_ts >= now() - $3
+        ";
     }
 
     public void AnnounceServer(string serverId, IReadOnlyList<TpqConsumerSettings> consumers)
@@ -120,7 +131,23 @@ internal class PgsqlServersDao : ITpqServersDao
             await AnnounceServerAsync(serverId, consumers);
         }
     }
-    
+
+    public async Task<int> GetServersCountInGroupAsync(string topicName, string consumerGroupId, TimeSpan outdatedThreshold)
+    {
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        await using var cmd = new NpgsqlCommand(_getServersCountInGroupQuery, conn);
+        cmd.Parameters.Add(new() { Value = topicName });
+        cmd.Parameters.Add(new() { Value = consumerGroupId });
+        cmd.Parameters.Add(new() { Value = outdatedThreshold });
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows || !await reader.ReadAsync())
+        {
+            throw new UnexpectedDbResultException("Could not get servers count for group");
+        }
+        var count = reader.GetInt32(0);
+        return count;
+    }
+
     private async Task AnnounceServerAsync(string serverId, IReadOnlyList<TpqConsumerSettings> consumers)
     {
         await using var conn = await _dataSource.OpenConnectionAsync();

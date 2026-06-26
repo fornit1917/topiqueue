@@ -1,4 +1,5 @@
-﻿using AwesomeAssertions;
+﻿using System;
+using AwesomeAssertions;
 using Topiqueue.Core.Helpers;
 
 namespace Topiqueue.Tests.Core.Helpers;

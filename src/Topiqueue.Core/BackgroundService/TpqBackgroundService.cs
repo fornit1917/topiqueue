@@ -11,6 +11,7 @@ internal class TpqBackgroundService : ITpqBackgroundService
 {
     private readonly ISegmentsRotationService _segmentsRotationService;
     private readonly IHeartbeatService _heartbeatService;
+    private readonly IPartitionsBalancerService _partitionsBalancerService;
     private readonly ITopicsReaderService _topicsReaderService;
     
     private readonly CancellationTokenSource _cancellationTokenSource;
@@ -18,11 +19,13 @@ internal class TpqBackgroundService : ITpqBackgroundService
     public TpqBackgroundService(
         ISegmentsRotationService segmentsRotationService,
         IHeartbeatService heartbeatService,
+        IPartitionsBalancerService partitionsBalancerService,
         ITopicsReaderService topicsReaderService)
     {
         _segmentsRotationService = segmentsRotationService;
         _heartbeatService = heartbeatService;
         _topicsReaderService = topicsReaderService;
+        _partitionsBalancerService = partitionsBalancerService;
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -35,6 +38,7 @@ internal class TpqBackgroundService : ITpqBackgroundService
         
         _segmentsRotationService.Run(_cancellationTokenSource.Token);
         _heartbeatService.Run(_cancellationTokenSource.Token);
+        _partitionsBalancerService.Run(_cancellationTokenSource.Token);
         _topicsReaderService.Run(_cancellationTokenSource.Token);
     }
 

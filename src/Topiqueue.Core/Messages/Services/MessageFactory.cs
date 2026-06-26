@@ -22,7 +22,7 @@ internal class MessageFactory : ITpqMessageFactory
 
     public TpqCreateMessageModel Create<T>(string topicName, T data, string? partitionKey = null) where T : ITpqMessageData
     {
-        var topic = _topicsRegistry.GetRequired(topicName);
+        var topic = _topicsRegistry.Get(topicName);
         var createMessageModel = new TpqCreateMessageModel
         {
             TopicName = topicName,

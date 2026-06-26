@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 
 namespace Topiqueue.Core.Dao;
@@ -14,4 +13,6 @@ public interface ITpqServersDao
     Task DeleteOutdatedAsync(TimeSpan threshold, List<string> deletedServerIds);
 
     Task UpsertHeartbeatTsAsync(string serverId, IReadOnlyList<TpqConsumerSettings> consumers);
+
+    Task<int> GetServersCountInGroupAsync(string topicName, string consumerGroupId, TimeSpan outdatedThreshold);
 }

@@ -11,7 +11,6 @@ internal class PartitionNumCalculator : IPartitionNumCalculator
     
     public int GetPartitionNum(string? partitionKey, int partitionsCount)
     {
-        object partitionCount;
         if (string.IsNullOrEmpty(partitionKey))
         {
             return Random.Shared.Next(0, partitionsCount);

@@ -15,7 +15,7 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
 
     private readonly string _insertTopicConsumerQuery;
     private readonly string _tryCapturePartitionsQuery;
-    private readonly string _releasePartitionsQuery;
+    private readonly string _tryReleasePartitionsQuery;
 
     public PgsqlConsumerDao(NpgsqlDataSource dataSource, TpqPostgresSettings settings)
     {
@@ -39,11 +39,26 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
                     AND x.consumer_group_id = $3
                 ORDER BY partition_num
                 LIMIT $4
+                FOR UPDATE SKIP LOCKED
             )
             RETURNING partition_num
         ";
 
-        _releasePartitionsQuery = @$"
+        _tryReleasePartitionsQuery = @$"
+            UPDATE {DbNames.TopicConsumerTable(settings)}
+            SET server_id = NULL
+            WHERE (topic_name, consumer_group_id, partition_num) IN (
+                SELECT topic_name, consumer_group_id, partition_num
+                FROM {DbNames.TopicConsumerTable(settings)} x
+                WHERE
+                    x.server_id = $1 
+                    AND x.topic_name = $2
+                    AND x.consumer_group_id = $3
+                ORDER BY partition_num
+                LIMIT $4
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING partition_num            
         ";
     }
 
@@ -53,7 +68,7 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
         using var batch = new NpgsqlBatch(conn);
         foreach (var consumer in consumers)
         {
-            var topic = topicsRegistry.GetRequired(consumer.TopicName);
+            var topic = topicsRegistry.Get(consumer.TopicName);
             for (int i = 0; i < topic.PartitionsCount; i++)
             {
                 var cmd = new NpgsqlBatchCommand(_insertTopicConsumerQuery);
@@ -90,8 +105,27 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
         }
     }
 
-    public Task ReleasePartitionsAsync(TpqConsumerSettings consumer, int partitionCount)
+    public async Task TryReleasePartitionsAsync(string serverId, TpqConsumerSettings consumer, int partitionCount,
+        List<int> releasedPartitions)
     {
-        throw new System.NotImplementedException();
+        releasedPartitions.Clear();
+        
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        await using var cmd = new NpgsqlCommand(_tryReleasePartitionsQuery, conn);
+        cmd.Parameters.Add(new() { Value = serverId });
+        cmd.Parameters.Add(new() { Value = consumer.TopicName });
+        cmd.Parameters.Add(new() { Value = consumer.ConsumerGroupId });
+        cmd.Parameters.Add(new() { Value = partitionCount });
+        
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+        {
+            return;
+        }
+
+        while (await reader.ReadAsync())
+        {
+            releasedPartitions.Add(reader.GetInt32(0));
+        }    
     }
 }
