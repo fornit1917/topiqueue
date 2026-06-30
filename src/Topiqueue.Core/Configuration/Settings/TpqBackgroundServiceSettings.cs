@@ -11,7 +11,7 @@ public class TpqBackgroundServiceSettings
     private readonly TimeSpan _heartbeatInterval = TimeSpan.FromSeconds(10);
     private readonly TimeSpan _heartbeatOutdatedThreshold = TimeSpan.FromSeconds(180);
     private readonly TimeSpan _checkPartitionsBalanceInterval = TimeSpan.FromSeconds(5);
-    private readonly int _topicsReaderWorkers = 1;
+    private readonly int _dbQueryExecutorWorkers = 1;
     private readonly int _messagesHandlerWorkers = 1;
 
     public TimeSpan RotateSegmentsInterval
@@ -44,10 +44,10 @@ public class TpqBackgroundServiceSettings
         init => _heartbeatOutdatedThreshold = value.EnsureGreaterThan(TimeSpan.Zero, nameof(HeartbeatOutdatedThreshold));
     }
 
-    public int TopicsReaderWorkers
+    public int DbQueryExecutorWorkers
     {
-        get => _topicsReaderWorkers;
-        init => _topicsReaderWorkers = value.EnsureGreaterThan(0, nameof(TopicsReaderWorkers));
+        get => _dbQueryExecutorWorkers;
+        init => _dbQueryExecutorWorkers = value.EnsureGreaterThan(0, nameof(DbQueryExecutorWorkers));
     }
 
     public int MessagesHandlerWorkers

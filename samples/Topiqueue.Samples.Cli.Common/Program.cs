@@ -25,7 +25,9 @@ public static class Program
             {
                 RotateSegmentsInterval = TimeSpan.FromSeconds(5),
                 HeartbeatInterval = TimeSpan.FromSeconds(5),
-                HeartbeatOutdatedThreshold = TimeSpan.FromSeconds(10)
+                HeartbeatOutdatedThreshold = TimeSpan.FromSeconds(10),
+                DbQueryExecutorWorkers = 2,
+                MessagesHandlerWorkers = 2,
             })
             .UseTopics([
                 new TpqTopicSettings("topic_1", 8, TimeSpan.FromHours(1)),

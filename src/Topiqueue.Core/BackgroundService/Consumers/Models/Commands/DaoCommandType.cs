@@ -1,7 +1,7 @@
 ﻿namespace Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 
-internal enum TopicsReaderCommandType
+internal enum DaoCommandType
 {
-    TryCapturePartitions,
+    CapturePartitions,
     ReleasePartitions,
 }

@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS ${topic_consumer_table}
     consumer_group_id TEXT NOT NULL,
     partition_num INT NOT NULL,
     server_id TEXT DEFAULT NULL REFERENCES ${server_table}(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    last_processed_tx_id xid8 DEFAULT 0::text::xid8,
+    last_processed_tx_id TEXT DEFAULT '0',
     last_processed_seq_id BIGINT DEFAULT 0,
     last_processed_created_at TIMESTAMPTZ DEFAULT '0001-01-01T12:00:00Z'::timestamptz,
     PRIMARY KEY (topic_name, consumer_group_id, partition_num)

@@ -59,47 +59,61 @@ public class TpqServices
             PartitionNumCalculator.Instance);
 
         Producer = new TpqProducer(MessageFactory, config.Dao.ProducerDao);
-        
-        var messagesHandlerChannelOptions = new UnboundedChannelOptions
+
+        var consumersDaoServiceChannelOpts = new UnboundedChannelOptions
         {
-            SingleWriter = false,
-            SingleReader = config.BackgroundServiceSettings.MessagesHandlerWorkers == 1,
             AllowSynchronousContinuations = false,
+            SingleReader = false,
+            SingleWriter = true,
         };
-        var messagesHandlerChannel = Channel.CreateUnbounded<MessagesHandlerCommand>(messagesHandlerChannelOptions);
+        var consumersDaoServiceChannel = Channel.CreateUnbounded<DaoCommand>(consumersDaoServiceChannelOpts);
+        var consumersDaoServiceChannelWriter = new CommandWriter<DaoCommand>(consumersDaoServiceChannel.Writer);
         
-        var topicsReaderChannelOptions = new UnboundedChannelOptions()
+        var consumersDispatcherChannelOpts = new UnboundedChannelOptions
         {
-            SingleWriter = false,
-            SingleReader = config.BackgroundServiceSettings.TopicsReaderWorkers == 1,
-            AllowSynchronousContinuations = false
+            SingleReader = true,
+            SingleWriter = false
         };
-        var topicsReaderChannel = Channel.CreateUnbounded<TopicsReaderCommand>(topicsReaderChannelOptions);
+        var consumersDispatcherChannel = Channel.CreateUnbounded<ConsumersCommand>(consumersDispatcherChannelOpts);
+        var consumersDispatcherChannelWriter = new CommandWriter<ConsumersCommand>(consumersDispatcherChannel.Writer);
         
-        var commandBus = new ConsumersCommandBus(topicsReaderChannel.Writer);
         
-        var consumersContext = new ConsumersContext(topicsRegistry, config.Consumers, commandBus);
+        var consumersContext = new ConsumersContext
+        {
+            Settings = config.BackgroundServiceSettings,
+            Consumers = config.Consumers,
+            Topics = topicsRegistry,
+            ServerId = serverId,
+            CommandsWriter = consumersDispatcherChannelWriter
+        };
         
-        var topicsReaderService = new TopicsReaderService(
-            topicsReaderChannel.Reader,
-            consumersContext,
+        var consumersDaoService = new ConsumersDaoService(
+            consumersDaoServiceChannel,
             config.Dao.ConsumerDao,
             TimerService.Instance,
-            config.LoggerFactory.CreateLogger<TopicsReaderService>(),
-            config.BackgroundServiceSettings,
+            consumersContext,
+            config.LoggerFactory.CreateLogger<ConsumersDaoService>());
+        
+        var partitionsRegistry = new PartitionsRegistry(topicsRegistry, config.Consumers);
+        var consumersDispatcherService = new ConsumersDispatcherService(
+            consumersDispatcherChannel,
+            partitionsRegistry,
+            consumersDaoServiceChannelWriter,
+            config.LoggerFactory.CreateLogger<ConsumersDispatcherService>(),
             serverId);
         
         var partitionsBalancerService = new PartitionsBalancerService(
-            consumersContext,
             config.Dao.ServersDao,
+            config.Dao.ConsumerDao,
             TimerService.Instance,
             config.LoggerFactory.CreateLogger<PartitionsBalancerService>(),
-            config.BackgroundServiceSettings);
+            consumersContext);
 
         BackgroundService = new TpqBackgroundService(
             rotateSegmentsService,
             heartbeatService,
             partitionsBalancerService,
-            topicsReaderService);        
+            consumersDispatcherService,
+            consumersDaoService);        
     }
 }

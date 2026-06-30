@@ -2,7 +2,7 @@
 
 namespace Topiqueue.Core.BackgroundService.Consumers.Interfaces;
 
-internal interface ITopicsReaderService
+internal interface IConsumersDispatcherService
 {
     void Run(CancellationToken cancellationToken);
 }

@@ -3,7 +3,6 @@ using System.Threading;
 using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
 using Topiqueue.Core.BackgroundService.Heartbeat;
 using Topiqueue.Core.BackgroundService.SegmentsRotation;
-using Topiqueue.Core.Configuration.Settings;
 
 namespace Topiqueue.Core.BackgroundService;
 
@@ -12,7 +11,8 @@ internal class TpqBackgroundService : ITpqBackgroundService
     private readonly ISegmentsRotationService _segmentsRotationService;
     private readonly IHeartbeatService _heartbeatService;
     private readonly IPartitionsBalancerService _partitionsBalancerService;
-    private readonly ITopicsReaderService _topicsReaderService;
+    private readonly IConsumersDispatcherService _consumersDispatcherService;
+    private readonly IConsumersDaoService _consumersDaoService;
     
     private readonly CancellationTokenSource _cancellationTokenSource;
     
@@ -20,12 +20,14 @@ internal class TpqBackgroundService : ITpqBackgroundService
         ISegmentsRotationService segmentsRotationService,
         IHeartbeatService heartbeatService,
         IPartitionsBalancerService partitionsBalancerService,
-        ITopicsReaderService topicsReaderService)
+        IConsumersDispatcherService consumersDispatcherService,
+        IConsumersDaoService consumersDaoService)
     {
         _segmentsRotationService = segmentsRotationService;
         _heartbeatService = heartbeatService;
-        _topicsReaderService = topicsReaderService;
         _partitionsBalancerService = partitionsBalancerService;
+        _consumersDispatcherService = consumersDispatcherService;
+        _consumersDaoService = consumersDaoService;
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -39,7 +41,8 @@ internal class TpqBackgroundService : ITpqBackgroundService
         _segmentsRotationService.Run(_cancellationTokenSource.Token);
         _heartbeatService.Run(_cancellationTokenSource.Token);
         _partitionsBalancerService.Run(_cancellationTokenSource.Token);
-        _topicsReaderService.Run(_cancellationTokenSource.Token);
+        _consumersDaoService.Run(_cancellationTokenSource.Token);
+        _consumersDispatcherService.Run(_cancellationTokenSource.Token);
     }
 
     public void SendStopSignal()
