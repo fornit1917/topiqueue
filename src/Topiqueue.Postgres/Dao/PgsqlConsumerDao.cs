@@ -15,7 +15,8 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
 {
     private readonly NpgsqlDataSource _dataSource;
 
-    private readonly string _insertTopicConsumerQuery;
+    private readonly string _insertTopicConsumerQueryEarliestOffset;
+    private readonly string _insertTopicConsumerQueryLatestOffset;
     private readonly string _getCapturedPartitionsCountQuery;
     private readonly string _capturePartitionsQuery;
     private readonly string _releasePartitionsQuery;
@@ -24,9 +25,44 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
     {
         _dataSource = dataSource;
         
-        _insertTopicConsumerQuery = $@"
+        _insertTopicConsumerQueryEarliestOffset = $@"
             INSERT INTO {DbNames.TopicConsumerTable(settings)} (topic_name, consumer_group_id, partition_num)
             VALUES ($1, $2, $3)
+            ON CONFLICT (topic_name, consumer_group_id, partition_num) DO NOTHING
+        ";
+
+        _insertTopicConsumerQueryLatestOffset = $@"
+            INSERT INTO {DbNames.TopicConsumerTable(settings)} 
+                (topic_name, consumer_group_id, partition_num, last_processed_tx_id, last_processed_seq_id, last_processed_created_at)
+            SELECT tc.topic_name, tc.consumer_group_id, tc.partition_num, tc.tx_id, tc.seq_id, tc.created_at
+            FROM (
+                (
+                    SELECT 
+                        $1 as topic_name, 
+                        $2 as consumer_group_id, 
+                        $3 as partition_num,
+                        tx_id::text::bigint, 
+                        seq_id, 
+                        created_at
+                    FROM {DbNames.MessageTable(settings)}
+                    WHERE 
+                        topic_name = $1 
+                        AND partition_num = $3
+                    ORDER BY (tx_id, seq_id) DESC 
+                    LIMIT 1
+                )  
+                UNION ALL
+                (
+                    SELECT
+                        $1 as topic_name, 
+                        $2 as consumer_group_id,
+                        $3 as partition_num,
+                        0::bigint, 
+                        0::bigint, 
+                        '0001-01-01T12:00:00Z'::timestamptz    
+                )
+            ) as tc
+            LIMIT 1
             ON CONFLICT (topic_name, consumer_group_id, partition_num) DO NOTHING
         ";
 
@@ -80,7 +116,11 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
             var topic = topicsRegistry.Get(consumer.TopicName);
             for (int i = 0; i < topic.PartitionsCount; i++)
             {
-                var cmd = new NpgsqlBatchCommand(_insertTopicConsumerQuery);
+                var insertQuery = consumer.AutoResetOffset == TpqAutoResetOffset.Earliest
+                    ? _insertTopicConsumerQueryEarliestOffset
+                    : _insertTopicConsumerQueryLatestOffset;
+                
+                var cmd = new NpgsqlBatchCommand(insertQuery);
                 cmd.Parameters.Add(new() { Value = consumer.TopicName });
                 cmd.Parameters.Add(new() { Value = consumer.ConsumerGroupId });
                 cmd.Parameters.Add(new() { Value = i });
@@ -130,7 +170,7 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
             var capturedPartition = new CapturedPartition
             {
                 PartitionNum = reader.GetInt32(reader.GetOrdinal("partition_num")),
-                LastProcessedTxId = reader.GetString(reader.GetOrdinal("last_processed_tx_id")),
+                LastProcessedTxId = reader.GetInt64(reader.GetOrdinal("last_processed_tx_id")),
                 LastProcessedSeqId = reader.GetInt64(reader.GetOrdinal("last_processed_seq_id")),
                 LastProcessedCreatedAt = reader.GetDateTime(reader.GetOrdinal("last_processed_created_at")),
             };

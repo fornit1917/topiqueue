@@ -38,13 +38,15 @@ public static class Program
                 {
                     TopicName = "topic_1",
                     ConsumerGroupId = "topic_1_consumer_1",
-                    TryCapturePartitionsOnStart = 4
+                    TryCapturePartitionsOnStart = 4,
+                    AutoResetOffset = TpqAutoResetOffset.Latest,
                 },
                 new TpqConsumerSettings
                 {
                     TopicName = "topic_2",
                     ConsumerGroupId = "topic_2_consumer_1",
-                    TryCapturePartitionsOnStart = 2
+                    TryCapturePartitionsOnStart = 2,
+                    AutoResetOffset =  TpqAutoResetOffset.Earliest,
                 },
             ]);
         

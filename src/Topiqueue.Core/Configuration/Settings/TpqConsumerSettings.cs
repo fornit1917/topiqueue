@@ -32,4 +32,6 @@ public class TpqConsumerSettings
         get => _tryCapturePartitionsOnStart;
         init => _tryCapturePartitionsOnStart = value.EnsureGreaterThan(-1, nameof(TryCapturePartitionsOnStart));
     }
+
+    public TpqAutoResetOffset AutoResetOffset { get; init; } = TpqAutoResetOffset.Latest;
 }
