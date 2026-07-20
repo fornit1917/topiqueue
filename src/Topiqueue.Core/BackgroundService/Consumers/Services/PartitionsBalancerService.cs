@@ -2,8 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Topiqueue.Core.BackgroundService.Consumers.Commands;
 using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
-using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
+using Topiqueue.Core.BackgroundService.Consumers.Interfaces.CommandBus;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Helpers;
 
@@ -14,6 +15,7 @@ internal class PartitionsBalancerService : IPartitionsBalancerService
     private readonly ITpqServersDao _serversDao;
     private readonly ITpqConsumerDao _consumersDao;
     private readonly ITimerService _timerService;
+    private readonly IPartitionsCommandBus _commandBus;
     private readonly ILogger<PartitionsBalancerService> _logger;
     private readonly IConsumersContext _context;
 
@@ -21,12 +23,14 @@ internal class PartitionsBalancerService : IPartitionsBalancerService
         ITpqServersDao serversDao,
         ITpqConsumerDao consumersDao,
         ITimerService timerService,
+        IPartitionsCommandBus commandBus,
         ILogger<PartitionsBalancerService> logger,
         IConsumersContext context)
     {
         _serversDao = serversDao;
         _timerService = timerService;
         _consumersDao = consumersDao;
+        _commandBus = commandBus;
         _logger = logger;
         _context = context;
     }
@@ -35,10 +39,14 @@ internal class PartitionsBalancerService : IPartitionsBalancerService
     {
         foreach (var consumer in _context.Consumers)
         {
-            var command = ConsumersCommand.CapturePartitions(consumer, consumer.TryCapturePartitionsOnStart);
+            var command = new CapturePartitionsCommand
+            {
+                Consumer = consumer,
+                PartitionsCount = consumer.TryCapturePartitionsOnStart
+            };
             
             // todo: get rid of GetAwaiter
-            _context.CommandsWriter.Write(command).GetAwaiter().GetResult();
+            _commandBus.Send(command).GetAwaiter().GetResult();
         }
         
         _ = Task.Run(async () => await CheckBalanceProcess(cancellationToken), cancellationToken);
@@ -96,15 +104,21 @@ internal class PartitionsBalancerService : IPartitionsBalancerService
             var fairCount = (int)Math.Ceiling((decimal)totalPartitions / totalServers);
             if (capturedPartitions < fairCount)
             {
-                var partitionsToCapture = fairCount - capturedPartitions;
-                var captureCommand = ConsumersCommand.CapturePartitions(consumer, partitionsToCapture);
-                await _context.CommandsWriter.Write(captureCommand);
+                var captureCommand = new CapturePartitionsCommand
+                {
+                    Consumer = consumer,
+                    PartitionsCount = fairCount - capturedPartitions
+                };
+                await _commandBus.Send(captureCommand);
             }
             else if (capturedPartitions > fairCount)
             {
-                var partitionsToRelease = capturedPartitions - fairCount;
-                var releaseCommand = ConsumersCommand.ReleasePartitions(consumer, partitionsToRelease);
-                await _context.CommandsWriter.Write(releaseCommand);
+                var releaseCommand = new ReleasePartitionsCommand
+                {
+                    Consumer = consumer,
+                    PartitionsCount = capturedPartitions - fairCount
+                };
+                await _commandBus.Send(releaseCommand);
             }
         }        
     }

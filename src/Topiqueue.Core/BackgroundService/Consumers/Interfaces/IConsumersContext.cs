@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
+using Topiqueue.Core.BackgroundService.Consumers.Commands;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 
@@ -11,5 +11,4 @@ internal interface IConsumersContext
     ITopicsRegistry Topics { get; }
     IReadOnlyList<TpqConsumerSettings> Consumers { get; }
     TpqBackgroundServiceSettings Settings { get; }
-    ICommandWriter<ConsumersCommand> CommandsWriter { get; }
 }

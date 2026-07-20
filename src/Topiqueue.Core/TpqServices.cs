@@ -3,9 +3,12 @@ using System.Threading.Channels;
 using Topiqueue.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using Topiqueue.Core.BackgroundService;
+using Topiqueue.Core.BackgroundService.Consumers.Commands;
+using Topiqueue.Core.BackgroundService.Consumers.Commands.Dao;
+using Topiqueue.Core.BackgroundService.Consumers.Commands.Handlers;
 using Topiqueue.Core.BackgroundService.Consumers.Models;
-using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 using Topiqueue.Core.BackgroundService.Consumers.Services;
+using Topiqueue.Core.BackgroundService.Consumers.Services.CommandBus;
 using Topiqueue.Core.BackgroundService.Heartbeat;
 using Topiqueue.Core.BackgroundService.SegmentsRotation;
 using Topiqueue.Core.Helpers;
@@ -67,7 +70,16 @@ public class TpqServices
             SingleWriter = true,
         };
         var consumersDaoServiceChannel = Channel.CreateUnbounded<DaoCommand>(consumersDaoServiceChannelOpts);
-        var consumersDaoServiceChannelWriter = new CommandWriter<DaoCommand>(consumersDaoServiceChannel.Writer);
+        var consumersDaoCommandBus = new DaoCommandBus(consumersDaoServiceChannel.Writer);
+
+        var handlersServiceChannelOpts = new UnboundedChannelOptions
+        {
+            AllowSynchronousContinuations = false,
+            SingleReader = false,
+            SingleWriter = true,
+        };
+        var handlersServiceChannel = Channel.CreateUnbounded<HandleMessagesCommand>(handlersServiceChannelOpts);
+        var handlersCommandBus = new HandlersCommandBus(handlersServiceChannel.Writer);
         
         var consumersDispatcherChannelOpts = new UnboundedChannelOptions
         {
@@ -75,8 +87,9 @@ public class TpqServices
             SingleWriter = false
         };
         var consumersDispatcherChannel = Channel.CreateUnbounded<ConsumersCommand>(consumersDispatcherChannelOpts);
-        var consumersDispatcherChannelWriter = new CommandWriter<ConsumersCommand>(consumersDispatcherChannel.Writer);
-        
+        var consumersDaoResultCommandBus = new DaoResultCommandBus(consumersDispatcherChannel.Writer);
+        var handlersResultCommandBus = new HandlersResultCommandBus(consumersDispatcherChannel.Writer);
+        var partitionsCommandBus = new PartitionsCommandBus(consumersDispatcherChannel.Writer);
         
         var consumersContext = new ConsumersContext
         {
@@ -84,21 +97,28 @@ public class TpqServices
             Consumers = config.Consumers,
             Topics = topicsRegistry,
             ServerId = serverId,
-            CommandsWriter = consumersDispatcherChannelWriter
         };
         
         var consumersDaoService = new ConsumersDaoService(
             consumersDaoServiceChannel,
             config.Dao.ConsumerDao,
             TimerService.Instance,
+            consumersDaoResultCommandBus,
             consumersContext,
             config.LoggerFactory.CreateLogger<ConsumersDaoService>());
+
+        var handlersService = new HandlersService(
+            handlersServiceChannel,
+            handlersResultCommandBus,
+            consumersContext);
         
         var partitionsRegistry = new PartitionsRegistry(topicsRegistry, config.Consumers);
         var consumersDispatcherService = new ConsumersDispatcherService(
             consumersDispatcherChannel,
             partitionsRegistry,
-            consumersDaoServiceChannelWriter,
+            TimerService.Instance,
+            consumersDaoCommandBus,
+            handlersCommandBus,
             config.LoggerFactory.CreateLogger<ConsumersDispatcherService>(),
             serverId);
         
@@ -106,6 +126,7 @@ public class TpqServices
             config.Dao.ServersDao,
             config.Dao.ConsumerDao,
             TimerService.Instance,
+            partitionsCommandBus,
             config.LoggerFactory.CreateLogger<PartitionsBalancerService>(),
             consumersContext);
 
@@ -114,6 +135,7 @@ public class TpqServices
             heartbeatService,
             partitionsBalancerService,
             consumersDispatcherService,
-            consumersDaoService);        
+            consumersDaoService,
+            handlersService);        
     }
 }

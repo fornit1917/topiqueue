@@ -30,8 +30,8 @@ public static class Program
                 MessagesHandlerWorkers = 2,
             })
             .UseTopics([
-                new TpqTopicSettings("topic_1", 8, TimeSpan.FromHours(1)),
-                new TpqTopicSettings("topic_2", 4, TimeSpan.FromDays(7)),
+                new TpqTopicSettings("topic_1", 2, TimeSpan.FromHours(1)),
+                // new TpqTopicSettings("topic_2", 4, TimeSpan.FromDays(7)),
             ])
             .UseConsumers([
                 new TpqConsumerSettings
@@ -40,19 +40,22 @@ public static class Program
                     ConsumerGroupId = "topic_1_consumer_1",
                     TryCapturePartitionsOnStart = 4,
                     AutoResetOffset = TpqAutoResetOffset.Latest,
+                    ReaderBatchSize = 10,
+                    HandlerBatchSize = 1,
+                    EmptyTopicPause = TimeSpan.FromSeconds(3),
                 },
-                new TpqConsumerSettings
-                {
-                    TopicName = "topic_2",
-                    ConsumerGroupId = "topic_2_consumer_1",
-                    TryCapturePartitionsOnStart = 2,
-                    AutoResetOffset =  TpqAutoResetOffset.Earliest,
-                },
+                // new TpqConsumerSettings
+                // {
+                //     TopicName = "topic_2",
+                //     ConsumerGroupId = "topic_2_consumer_1",
+                //     TryCapturePartitionsOnStart = 2,
+                //     AutoResetOffset =  TpqAutoResetOffset.Earliest,
+                // },
             ]);
         
         var tpq = new TpqServices(tpqConfig);
         tpq.Initializer.Initialize();
-        tpq.BackgroundService.StartBackgroundService();
+        
 
         for (int i = 1; i <= 20; i++)
         {
@@ -65,6 +68,9 @@ public static class Program
             tpq.Producer.Produce("topic_1", message, partitionKey);            
         }
         Console.WriteLine("Produced 20 messages");
+        
+        tpq.BackgroundService.StartBackgroundService();
+        Console.Write("Topiqueue service started");
         
         Console.ReadLine();
     }

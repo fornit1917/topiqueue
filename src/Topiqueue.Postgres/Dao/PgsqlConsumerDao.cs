@@ -6,6 +6,7 @@ using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Dao.Models;
 using Topiqueue.Core.Exceptions;
+using Topiqueue.Core.Messages.Models;
 using Topiqueue.Postgres.Configuration;
 using Topiqueue.Postgres.Helpers;
 
@@ -20,6 +21,8 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
     private readonly string _getCapturedPartitionsCountQuery;
     private readonly string _capturePartitionsQuery;
     private readonly string _releasePartitionsQuery;
+    private readonly string _readMessagesQuery;
+    private readonly string _commitOffsetQuery;
 
     public PgsqlConsumerDao(NpgsqlDataSource dataSource, TpqPostgresSettings settings)
     {
@@ -104,6 +107,34 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
                     AND x.partition_num = ANY($4)
                 FOR UPDATE SKIP LOCKED
             )
+        ";
+
+        _readMessagesQuery = $@"
+            SELECT tx_id::text::bigint, seq_id, created_at, partition_key, message_type, data_txt 
+            FROM {DbNames.MessageTable(settings)}
+            WHERE
+                topic_name = $1
+                AND partition_num = $2
+                AND (tx_id, seq_id) > ($3::text::xid8, $4)
+                AND tx_id < pg_snapshot_xmin(pg_current_snapshot())
+                AND created_at >= $5
+                AND created_at <= now()
+            ORDER BY
+                (tx_id, seq_id) ASC
+            LIMIT $6
+        ";
+
+        _commitOffsetQuery = $@"
+            UPDATE {DbNames.TopicConsumerTable(settings)}
+            SET
+                last_processed_tx_id = $1,
+                last_processed_seq_id = $2,
+                last_processed_created_at = $3
+            WHERE
+                topic_name = $4
+                AND consumer_group_id = $5
+                AND partition_num = $6
+                AND server_id = $7
         ";
     }
 
@@ -195,5 +226,58 @@ internal class PgsqlConsumerDao : ITpqConsumerDao
         cmd.Parameters.Add(new() { Value = partitionNums });
 
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task ReadMessagesAsync(ReadMessagesRequest request, List<TpqMessageModel> result)
+    {
+        result.Clear();
+        
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        await using var cmd = new NpgsqlCommand(_readMessagesQuery, conn);
+        cmd.Parameters.Add(new() { Value = request.TopicName });
+        cmd.Parameters.Add(new() { Value = request.PartitionNum });
+        cmd.Parameters.Add(new() { Value = request.Offset.TxId });
+        cmd.Parameters.Add(new() { Value = request.Offset.SeqId });
+        cmd.Parameters.Add(new() { Value = request.Offset.CreatedAt.AddHours(-1) });
+        cmd.Parameters.Add(new() { Value = request.Limit });
+        
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+        {
+            return;
+        }
+
+        while (await reader.ReadAsync())
+        {
+            var message = new TpqMessageModel
+            {
+                TopicName = request.TopicName,
+                PartitionNum = request.PartitionNum,
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
+                PartitionKey = reader.GetNullableString("partition_key"),
+                MessageType = reader.GetString(reader.GetOrdinal("message_type")),
+                SeqId = reader.GetInt64(reader.GetOrdinal("seq_id")),
+                TxId = reader.GetInt64(reader.GetOrdinal("tx_id")),
+                DataTxt = reader.GetNullableString("data_txt"),
+            };
+            result.Add(message);
+        }
+    }
+
+    public async Task<bool> CommitOffsetAsync(string serverId, TpqConsumerSettings consumer, int partitionNum, PartitionOffset offset)
+    {
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        await using var cmd = new NpgsqlCommand(_commitOffsetQuery, conn);
+        cmd.Parameters.Add(new() { Value = offset.TxId });
+        cmd.Parameters.Add(new() { Value = offset.SeqId });
+        cmd.Parameters.Add(new() { Value = offset.CreatedAt });
+        cmd.Parameters.Add(new () { Value = consumer.TopicName });
+        cmd.Parameters.Add(new() { Value = consumer.ConsumerGroupId });
+        cmd.Parameters.Add(new() { Value = partitionNum });
+        cmd.Parameters.Add(new() { Value = serverId });
+        
+        var updatedCount = await cmd.ExecuteNonQueryAsync();
+
+        return updatedCount > 0;
     }
 }

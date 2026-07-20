@@ -13,6 +13,7 @@ internal class TpqBackgroundService : ITpqBackgroundService
     private readonly IPartitionsBalancerService _partitionsBalancerService;
     private readonly IConsumersDispatcherService _consumersDispatcherService;
     private readonly IConsumersDaoService _consumersDaoService;
+    private readonly IHandlersService _handlersService;
     
     private readonly CancellationTokenSource _cancellationTokenSource;
     
@@ -21,13 +22,15 @@ internal class TpqBackgroundService : ITpqBackgroundService
         IHeartbeatService heartbeatService,
         IPartitionsBalancerService partitionsBalancerService,
         IConsumersDispatcherService consumersDispatcherService,
-        IConsumersDaoService consumersDaoService)
+        IConsumersDaoService consumersDaoService,
+        IHandlersService handlersService)
     {
         _segmentsRotationService = segmentsRotationService;
         _heartbeatService = heartbeatService;
         _partitionsBalancerService = partitionsBalancerService;
         _consumersDispatcherService = consumersDispatcherService;
         _consumersDaoService = consumersDaoService;
+        _handlersService = handlersService;
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -41,6 +44,7 @@ internal class TpqBackgroundService : ITpqBackgroundService
         _segmentsRotationService.Run(_cancellationTokenSource.Token);
         _heartbeatService.Run(_cancellationTokenSource.Token);
         _partitionsBalancerService.Run(_cancellationTokenSource.Token);
+        _handlersService.Run(_cancellationTokenSource.Token);
         _consumersDaoService.Run(_cancellationTokenSource.Token);
         _consumersDispatcherService.Run(_cancellationTokenSource.Token);
     }

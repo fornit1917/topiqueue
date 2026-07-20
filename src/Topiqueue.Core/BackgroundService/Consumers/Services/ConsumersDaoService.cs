@@ -3,9 +3,12 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Topiqueue.Core.BackgroundService.Consumers.Commands;
+using Topiqueue.Core.BackgroundService.Consumers.Commands.Dao;
 using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
-using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
+using Topiqueue.Core.BackgroundService.Consumers.Interfaces.CommandBus;
 using Topiqueue.Core.Dao;
+using Topiqueue.Core.Dao.Models;
 using Topiqueue.Core.Helpers;
 
 namespace Topiqueue.Core.BackgroundService.Consumers.Services;
@@ -15,6 +18,7 @@ internal class ConsumersDaoService : IConsumersDaoService
     private readonly Channel<DaoCommand> _channel;
     private readonly ITpqConsumerDao _consumerDao;
     private readonly ITimerService _timerService;
+    private readonly IDaoResultCommandBus _resultCommandBus;
     private readonly IConsumersContext _context;
     private readonly ILogger<ConsumersDaoService> _logger;
 
@@ -22,12 +26,14 @@ internal class ConsumersDaoService : IConsumersDaoService
         Channel<DaoCommand> channel,
         ITpqConsumerDao consumerDao,
         ITimerService timerService,
+        IDaoResultCommandBus resultCommandBus,
         IConsumersContext context,
         ILogger<ConsumersDaoService> logger)
     {
         _channel = channel;
         _consumerDao = consumerDao;
         _timerService = timerService;
+        _resultCommandBus = resultCommandBus;
         _context = context;
         _logger = logger;
     }
@@ -72,8 +78,10 @@ internal class ConsumersDaoService : IConsumersDaoService
             {
                 var task = command.Type switch
                 {
-                    DaoCommandType.CapturePartitions => HandleCapturePartitions(command, cancellationToken),
-                    DaoCommandType.ReleasePartitions => HandleReleasePartitions(command, cancellationToken),
+                    DaoCommandType.CapturePartitions => HandleCapturePartitions(command.AsCapturePartitions(), cancellationToken),
+                    DaoCommandType.ReleasePartitions => HandleReleasePartitions(command.AsReleasePartitions(), cancellationToken),
+                    DaoCommandType.LoadMessages => HandleLoadMessages(command.AsLoadMessages(), cancellationToken),
+                    DaoCommandType.CommitOffset => HandleCommitOffset(command.AsCommitOffset(), cancellationToken),
                     _ => Task.CompletedTask
                 };
                 
@@ -91,7 +99,7 @@ internal class ConsumersDaoService : IConsumersDaoService
         }
     }
 
-    private async Task HandleCapturePartitions(DaoCommand command, CancellationToken cancellationToken)
+    private async Task HandleCapturePartitions(CapturePartitionsDaoCommand command, CancellationToken cancellationToken)
     {
         var capturedPartitions = await _consumerDao.CapturePartitionsAsync(_context.ServerId, command.Consumer, command.PartitionsCount);
         if (cancellationToken.IsCancellationRequested)
@@ -101,19 +109,81 @@ internal class ConsumersDaoService : IConsumersDaoService
 
         foreach (var partition in capturedPartitions)
         {
-            var setCapturedCommand = ConsumersCommand.SetPartitionCaptured(command.Consumer, partition);
-            await _context.CommandsWriter.Write(setCapturedCommand);
+            var setCapturedCommand = new SetCapturedPartitionCommand
+            {
+                Consumer = command.Consumer,
+                CapturedPartition = partition
+            };
+            await _resultCommandBus.Send(setCapturedCommand);
         }
     }
 
-    private async Task HandleReleasePartitions(DaoCommand command, CancellationToken cancellationToken)
+    private async Task HandleReleasePartitions(ReleasePartitionsDaoCommand command, CancellationToken cancellationToken)
     {
-        var partitionNumsToRelease = command.PartitionNums ?? Array.Empty<int>();
-        await _consumerDao.ReleasePartitionsAsync(_context.ServerId, command.Consumer, partitionNumsToRelease);
-        foreach (var releasedPartition in partitionNumsToRelease)
+        await _consumerDao.ReleasePartitionsAsync(_context.ServerId, command.Consumer, command.PartitionsNums);
+        if (cancellationToken.IsCancellationRequested)
         {
-            var setReleasedCommand = ConsumersCommand.SetPartitionReleased(command.Consumer, releasedPartition); 
-            await _context.CommandsWriter.Write(setReleasedCommand);
+            return;
         }
+        
+        foreach (var releasedPartition in command.PartitionsNums)
+        {
+            var setReleasedCommand = new SetReleasedPartitionCommand
+            {
+                Consumer = command.Consumer,
+                PartitionNum = releasedPartition
+            };
+            await _resultCommandBus.Send(setReleasedCommand);
+        }
+    }
+
+    private async Task HandleLoadMessages(LoadMessagesDaoCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command.MessagesBuffer, nameof(command.MessagesBuffer));
+        
+        var readMessagesRequest = new ReadMessagesRequest
+        {
+            TopicName = command.Consumer.TopicName,
+            PartitionNum = command.PartitionNum,
+            Offset = command.Offset,
+            Limit = command.Consumer.ReaderBatchSize
+        };
+
+        await _consumerDao.ReadMessagesAsync(readMessagesRequest, command.MessagesBuffer);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        var setLoadedCommand = new SetLoadedMessagesCommand
+        {
+            Consumer = command.Consumer,
+            PartitionNum = command.PartitionNum,
+            UsedOffset = command.Offset,
+            MessagesBuffer = command.MessagesBuffer,
+        };
+        
+        await _resultCommandBus.Send(setLoadedCommand);
+    }
+
+    private async Task HandleCommitOffset(CommitDaoCommand command, CancellationToken cancellationToken)
+    {
+        var isStillCaptured = await _consumerDao.CommitOffsetAsync(
+            _context.ServerId, command.Consumer, command.PartitionNum, command.Offset);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        var setCommittedCommand = new SetCommittedCommand
+        {
+            Consumer = command.Consumer,
+            PartitionNum = command.PartitionNum,
+            IsStillCaptured = isStillCaptured,
+            Offset = command.Offset,
+        };
+        
+        await _resultCommandBus.Send(setCommittedCommand);
     }
 }

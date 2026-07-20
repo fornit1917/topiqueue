@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using Topiqueue.Core.BackgroundService.Consumers.Commands;
 using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
-using Topiqueue.Core.BackgroundService.Consumers.Models.Commands;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 
@@ -12,5 +12,4 @@ internal class ConsumersContext : IConsumersContext
     public required ITopicsRegistry Topics { get; init; }
     public required IReadOnlyList<TpqConsumerSettings> Consumers { get; init; }
     public required TpqBackgroundServiceSettings Settings { get; init; }
-    public required ICommandWriter<ConsumersCommand> CommandsWriter { get; init; }
 }

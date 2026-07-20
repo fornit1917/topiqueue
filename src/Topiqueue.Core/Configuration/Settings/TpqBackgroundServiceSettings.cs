@@ -6,11 +6,15 @@ namespace Topiqueue.Core.Configuration.Settings;
 public class TpqBackgroundServiceSettings
 {
     private readonly TimeSpan _dbErrorPause = TimeSpan.FromSeconds(10);
+    
     private readonly TimeSpan _rotateSegmentsInterval = TimeSpan.FromMinutes(1);
     private readonly TimeSpan _segmentBoundaryThreshold = TimeSpan.FromMinutes(5);
+    
     private readonly TimeSpan _heartbeatInterval = TimeSpan.FromSeconds(10);
     private readonly TimeSpan _heartbeatOutdatedThreshold = TimeSpan.FromSeconds(180);
+    
     private readonly TimeSpan _checkPartitionsBalanceInterval = TimeSpan.FromSeconds(5);
+    
     private readonly int _dbQueryExecutorWorkers = 1;
     private readonly int _messagesHandlerWorkers = 1;
 

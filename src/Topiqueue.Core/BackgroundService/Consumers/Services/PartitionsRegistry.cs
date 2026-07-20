@@ -27,8 +27,7 @@ internal class PartitionsRegistry : IPartitionsRegistry
             {
                 partitions[i] = new PartitionState
                 {
-                    TopicName = consumer.TopicName,
-                    ConsumerGroupId = consumer.ConsumerGroupId,
+                    Consumer = consumer,
                     PartitionNum = i
                 };
             }

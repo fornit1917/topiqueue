@@ -8,16 +8,24 @@ internal class TimerService : ITimerService
 {
     public static readonly TimerService Instance = new TimerService();
     
-    public async Task<bool> TryDelay(TimeSpan timeSpan, CancellationToken cancellationToken = default)
+    public async Task<bool> TryDelay(TimeSpan delay, CancellationToken cancellationToken = default)
     {
         try
         {
-            await Task.Delay(timeSpan, cancellationToken);
+            await Task.Delay(delay, cancellationToken);
             return true;
         }
         catch (TaskCanceledException)
         {
             return false;
+        }
+    }
+
+    public async Task RunWithDelay(Func<ValueTask> action, TimeSpan delay, CancellationToken cancellationToken = default)
+    {
+        if (await TryDelay(delay, cancellationToken))
+        {
+            await action();
         }
     }
 }
