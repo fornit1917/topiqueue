@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Npgsql;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Messages.Models;
@@ -42,9 +43,46 @@ internal class PgsqlProducerDao : ITpqProducerDao
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public void InsertBatch(IReadOnlyList<TpqCreateMessageModel> messages)
+    {
+        using var conn = _dataSource.OpenConnection();
+        using var batch = new NpgsqlBatch(conn);
+        foreach (var message in messages)
+        {
+            var cmd = CreateInsertCommandForBatch(message);
+            batch.BatchCommands.Add(cmd);
+        }
+
+        batch.ExecuteNonQuery();
+    }
+
+    public async Task InsertBatchAsync(IReadOnlyList<TpqCreateMessageModel> messages)
+    {
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        await using var batch = new NpgsqlBatch(conn);
+        foreach (var message in messages)
+        {
+            var cmd = CreateInsertCommandForBatch(message);
+            batch.BatchCommands.Add(cmd);
+        }
+        
+        await batch.ExecuteNonQueryAsync();
+    }
+
     private NpgsqlCommand CreateInsertCommand(NpgsqlConnection conn, TpqCreateMessageModel message)
     {
         var cmd = new NpgsqlCommand(_insertQuery, conn);
+        cmd.Parameters.Add(new() { Value = message.TopicName });
+        cmd.Parameters.Add(new() { Value = message.PartitionNum });
+        cmd.Parameters.Add(new() { Value = message.PartitionKey });
+        cmd.Parameters.Add(new() { Value = message.MessageType });
+        cmd.Parameters.Add(new() { Value = message.DataTxt });
+        return cmd;
+    }
+
+    private NpgsqlBatchCommand CreateInsertCommandForBatch(TpqCreateMessageModel message)
+    {
+        var cmd = new NpgsqlBatchCommand(_insertQuery);
         cmd.Parameters.Add(new() { Value = message.TopicName });
         cmd.Parameters.Add(new() { Value = message.PartitionNum });
         cmd.Parameters.Add(new() { Value = message.PartitionKey });

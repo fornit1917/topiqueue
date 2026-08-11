@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Topiqueue.Core;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
+using Topiqueue.Core.Messages.Models;
 using Topiqueue.Postgres.Configuration;
 using Topiqueue.Samples.Cli.Common.Messages;
 using Topiqueue.Samples.Cli.Common.ServiceContainer;
@@ -67,16 +69,22 @@ public static class Program
             
             if (action == "1")
             {
-                for (int i = 1; i <= 20; i++)
+                const int messagesCount = 20;
+                var messages = new List<TpqCreateMessageModel>(capacity: messagesCount);
+                for (int i = 1; i <= messagesCount; i++)
                 {
-                    var message = new DemoMessageData
+                    var messageData = new DemoMessageData
                     {
                         Id = i,
                         Value = $"Value {i}"
                     };
-                    var partitionKey = $"key_{i}"; 
-                    tpq.Producer.Produce("topic_1", message, partitionKey);
+                    var partitionKey = $"key_{i}";
+                    var message = tpq.MessageFactory.Create("topic_1", messageData, partitionKey);
+                    messages.Add(message);
                 }
+                
+                tpq.Producer.ProduceBatch(messages);
+                
                 Console.WriteLine("Messages produced");
             }
 

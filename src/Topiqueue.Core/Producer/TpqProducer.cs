@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Messages;
 using Topiqueue.Core.Messages.Interfaces;
+using Topiqueue.Core.Messages.Models;
 
 namespace Topiqueue.Core.Producer;
 
@@ -26,5 +28,15 @@ internal class TpqProducer : ITpqProducer
     {
         var message = _messageFactory.Create(topicName, data, partitionKey);
         return _producerDao.InsertAsync(message);
+    }
+
+    public void ProduceBatch(IReadOnlyList<TpqCreateMessageModel> messages)
+    {
+        _producerDao.InsertBatch(messages);
+    }
+
+    public Task ProduceBatchAsync(IReadOnlyList<TpqCreateMessageModel> messages)
+    {
+        return _producerDao.InsertBatchAsync(messages);
     }
 }
