@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Topiqueue.Core.BackgroundService.Consumers.Commands;
 using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 

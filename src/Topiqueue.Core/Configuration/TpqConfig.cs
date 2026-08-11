@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Topiqueue.Core.BackgroundService.Consumers.Interfaces;
+using Topiqueue.Core.BackgroundService.Consumers.Services;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Dao;
 using Topiqueue.Core.Exceptions;
 using Topiqueue.Core.Logging;
-using Topiqueue.Core.Messages;
 using Topiqueue.Core.Messages.Interfaces;
 using Topiqueue.Core.Messages.Services;
+using Topiqueue.Core.ServiceContainer;
 
 namespace Topiqueue.Core.Configuration;
 
@@ -20,9 +24,16 @@ public class TpqConfig : ICommonInfrastructure
     private ITpqDao? _dao;
     private Func<ICommonInfrastructure, ITpqDao>? _createDao;
     
-    public TpqBackgroundServiceSettings BackgroundServiceSettings { get; private set; } = new();
+    private readonly Dictionary<string, Func<ITpqMessageDataSerializer, IHandlerExecutor>> _executorFactoriesByMessageType = new();
 
-    public ITpqDao Dao
+    private ITpqServiceContainerScopeFactory? _serviceContainerScopeFactory;
+    
+    internal ITpqServiceContainerScopeFactory ServiceContainerScopeFactory => _serviceContainerScopeFactory 
+                                                                              ?? throw new InvalidTopiqueueConfigException("Service container scope factory not specified. Call TpqConfig.UseServiceContainerScopeFactory to fix it.");
+
+    internal TpqBackgroundServiceSettings BackgroundServiceSettings { get; private set; } = new();
+
+    internal ITpqDao Dao
     {
         get
         {
@@ -31,15 +42,19 @@ public class TpqConfig : ICommonInfrastructure
                    ?? throw new InvalidTopiqueueConfigException("Dao factory not specified. Call TpqConfig.UseDaoFactory to fix it.");
         }
     }
+
+    internal Dictionary<string, IHandlerExecutor> ExecutorsByMessageType =>
+        _executorFactoriesByMessageType
+            .ToDictionary(x => x.Key, x => x.Value.Invoke(Serializer)); 
     
     public ILoggerFactory LoggerFactory { get; private set; } = EmptyLoggerFactory.Instance;
 
-    public ITpqMessageDataSerializer Serializer { get; private set; } =
+    internal ITpqMessageDataSerializer Serializer { get; private set; } =
         new SystemTextJsonSerializer(new JsonSerializerOptions());
     
-    public IReadOnlyList<TpqTopicSettings> Topics => _topics;
+    internal IReadOnlyList<TpqTopicSettings> Topics => _topics;
     
-    public IReadOnlyList<TpqConsumerSettings> Consumers => _consumers;
+    internal IReadOnlyList<TpqConsumerSettings> Consumers => _consumers;
 
     public TpqConfig UseLoggerFactory(ILoggerFactory loggerFactory)
     {
@@ -58,6 +73,12 @@ public class TpqConfig : ICommonInfrastructure
     {
         _dao = null;
         _createDao = createDao;
+        return this;
+    }
+
+    public TpqConfig UseServiceContainerScopeFactory(ITpqServiceContainerScopeFactory scopeFactory)
+    {
+        _serviceContainerScopeFactory = scopeFactory;
         return this;
     }
     
@@ -87,6 +108,14 @@ public class TpqConfig : ICommonInfrastructure
     public TpqConfig UseConsumers(IReadOnlyList<TpqConsumerSettings> consumers)
     {
         _consumers.AddRange(consumers);
+        return this;
+    }
+
+    public TpqConfig UseBatchHandler<TMessage, THandler>() 
+        where TMessage : ITpqMessageData
+        where THandler : ITpqBatchMessageHandler<TMessage>
+    {
+        _executorFactoriesByMessageType[TMessage.GetMessageType()] = (serializer) => new HandlerExecutor<TMessage>(serializer);
         return this;
     }
 }

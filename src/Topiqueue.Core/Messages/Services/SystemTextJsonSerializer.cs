@@ -16,4 +16,12 @@ public class SystemTextJsonSerializer : ITpqMessageDataSerializer
     {
         return JsonSerializer.Serialize(data, _opts);
     }
+
+    public T? DeserializeFromText<T>(string? text)
+    {
+        if (text == null)
+            return default;
+        
+        return JsonSerializer.Deserialize<T>(text, _opts);
+    }
 }

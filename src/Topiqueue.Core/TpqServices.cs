@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Threading.Channels;
 using Topiqueue.Core.Configuration;
 using Microsoft.Extensions.Logging;
@@ -107,10 +108,18 @@ public class TpqServices
             consumersContext,
             config.LoggerFactory.CreateLogger<ConsumersDaoService>());
 
+        var handlerExecutors = config
+            .ExecutorsByMessageType
+            .ToFrozenDictionary(x => x.Key, x => x.Value);
+        var handlersRegistry = new HandlersRegistry(handlerExecutors);
         var handlersService = new HandlersService(
             handlersServiceChannel,
+            config.ServiceContainerScopeFactory,
+            handlersRegistry,
             handlersResultCommandBus,
-            consumersContext);
+            TimerService.Instance,
+            consumersContext,
+            config.LoggerFactory.CreateLogger<HandlersService>());
         
         var partitionsRegistry = new PartitionsRegistry(topicsRegistry, config.Consumers);
         var consumersDispatcherService = new ConsumersDispatcherService(

@@ -6,6 +6,7 @@ using Topiqueue.Core.Configuration;
 using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Postgres.Configuration;
 using Topiqueue.Samples.Cli.Common.Messages;
+using Topiqueue.Samples.Cli.Common.ServiceContainer;
 
 namespace Topiqueue.Samples.Cli.Common;
 
@@ -20,7 +21,9 @@ public static class Program
 
         var tpqConfig = new TpqConfig()
             .UseLoggerFactory(loggerFactory)
+            .UseServiceContainerScopeFactory(new SampleCliServiceContainerScopeFactory())
             .UsePostgresql(dataSource)
+            .UseBatchHandler<DemoMessageData, DemoMessageHandler>()
             .UseBackgroundServiceSettings(new TpqBackgroundServiceSettings
             {
                 RotateSegmentsInterval = TimeSpan.FromSeconds(5),
@@ -31,7 +34,6 @@ public static class Program
             })
             .UseTopics([
                 new TpqTopicSettings("topic_1", 2, TimeSpan.FromHours(1)),
-                // new TpqTopicSettings("topic_2", 4, TimeSpan.FromDays(7)),
             ])
             .UseConsumers([
                 new TpqConsumerSettings
@@ -40,38 +42,52 @@ public static class Program
                     ConsumerGroupId = "topic_1_consumer_1",
                     TryCapturePartitionsOnStart = 4,
                     AutoResetOffset = TpqAutoResetOffset.Latest,
-                    ReaderBatchSize = 10,
+                    ReaderBatchSize = 5,
                     HandlerBatchSize = 1,
-                    EmptyTopicPause = TimeSpan.FromSeconds(3),
-                },
-                // new TpqConsumerSettings
-                // {
-                //     TopicName = "topic_2",
-                //     ConsumerGroupId = "topic_2_consumer_1",
-                //     TryCapturePartitionsOnStart = 2,
-                //     AutoResetOffset =  TpqAutoResetOffset.Earliest,
-                // },
+                    EmptyTopicPause = TimeSpan.FromSeconds(1),
+                }
             ]);
         
         var tpq = new TpqServices(tpqConfig);
         tpq.Initializer.Initialize();
-        
 
-        for (int i = 1; i <= 20; i++)
+        while (true)
         {
-            var message = new DemoMessageData
+            Console.WriteLine("Choose action:");
+            Console.WriteLine("0. Exit");
+            Console.WriteLine("1. Produce messages");
+            Console.WriteLine("2. Start Topiqueue background service");
+
+            var action = Console.ReadLine();
+
+            if (action == "0")
             {
-                Id = i,
-                Value = $"Value {i}"
-            };
-            var partitionKey = $"key_{i}"; 
-            tpq.Producer.Produce("topic_1", message, partitionKey);            
+                break;
+            }
+            
+            if (action == "1")
+            {
+                for (int i = 1; i <= 20; i++)
+                {
+                    var message = new DemoMessageData
+                    {
+                        Id = i,
+                        Value = $"Value {i}"
+                    };
+                    var partitionKey = $"key_{i}"; 
+                    tpq.Producer.Produce("topic_1", message, partitionKey);
+                }
+                Console.WriteLine("Messages produced");
+            }
+
+            if (action == "2")
+            {
+                Console.WriteLine("Topiqueue service start... press enter to continue...");
+                tpq.BackgroundService.StartBackgroundService();
+                Console.ReadLine();
+            }
+            
+            Console.WriteLine();
         }
-        Console.WriteLine("Produced 20 messages");
-        
-        tpq.BackgroundService.StartBackgroundService();
-        Console.Write("Topiqueue service started");
-        
-        Console.ReadLine();
     }
 }

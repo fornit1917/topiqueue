@@ -1,7 +1,6 @@
 ﻿using System;
-using Topiqueue.Core.Messages.Models;
 
-namespace Topiqueue.Core.Dao.Models;
+namespace Topiqueue.Core.Messages.Models;
 
 public struct PartitionOffset
 {

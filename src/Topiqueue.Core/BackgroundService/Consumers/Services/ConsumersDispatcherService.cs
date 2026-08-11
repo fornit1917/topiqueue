@@ -257,22 +257,8 @@ internal class ConsumersDispatcherService : IConsumersDispatcherService
         {
             await SendBatchToHandlerIfNeed(partition);
         }
-
-        if (!partition.ReadInProgress && !partition.ReadOnPause)
-        {
-            if (partition.MessagesInCacheCount < command.Consumer.HandlerBatchSize
-                && partition.LastReadOffset.HasValue)
-            {
-                var lastReadOffset = partition.LastReadOffset.Value;
-                var readNextCommand = new ConsumersCommand(new LoadMessagesCommand
-                {
-                    Consumer = command.Consumer,
-                    PartitionNum = command.PartitionNum,
-                    Offset = lastReadOffset
-                });
-                await _channel.Writer.WriteAsync(readNextCommand);
-            }
-        }
+        
+        await ReadNextToCacheIfNeed(partition);
     }
     
     private ValueTask HandleReleaseCommand(ReleasePartitionsCommand command)
@@ -356,7 +342,7 @@ internal class ConsumersDispatcherService : IConsumersDispatcherService
     {
         if (partition.ReadInProgress
             || partition.ReadOnPause
-            || partition.MessagesInCacheCount > partition.Consumer.HandlerBatchSize
+            || partition.MessagesInCacheCount >= partition.Consumer.ReaderBatchSize
             || !partition.LastReadOffset.HasValue)
         {
             return ValueTask.CompletedTask;

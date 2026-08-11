@@ -1,4 +1,6 @@
-﻿namespace Topiqueue.Core.Dao.Models;
+﻿using Topiqueue.Core.Messages.Models;
+
+namespace Topiqueue.Core.Dao.Models;
 
 public struct ReadMessagesRequest
 {

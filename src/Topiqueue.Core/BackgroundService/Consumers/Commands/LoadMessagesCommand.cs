@@ -1,5 +1,6 @@
 ﻿using Topiqueue.Core.Configuration.Settings;
 using Topiqueue.Core.Dao.Models;
+using Topiqueue.Core.Messages.Models;
 
 namespace Topiqueue.Core.BackgroundService.Consumers.Commands;
 
