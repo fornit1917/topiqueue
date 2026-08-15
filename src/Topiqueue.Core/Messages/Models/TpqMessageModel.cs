@@ -23,5 +23,5 @@ public class TpqMessageModel<T> where T : ITpqMessageData
     public required DateTime CreatedAt { get; init; }
     public required string? PartitionKey { get; init; }
     public required string MessageType { get; init; }
-    public required T? Data { get; init; }
+    public required T Data { get; init; }
 }

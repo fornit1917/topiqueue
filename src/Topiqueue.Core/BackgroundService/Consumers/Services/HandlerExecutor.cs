@@ -26,7 +26,7 @@ internal class HandlerExecutor<T> : IHandlerExecutor where T : ITpqMessageData
         if (messages.Count == 0)
             return;
 
-        var handler = serviceContainerScope.GetService<T>() as ITpqBatchMessageHandler<T>;
+        var handler = serviceContainerScope.GetService<ITpqBatchMessageHandler<T>>() as ITpqBatchMessageHandler<T>;
         if (handler == null)
         {
             throw new CreateHandlerException($"Could not create handler for batch of messages with type {messages[0].MessageType}");
@@ -49,6 +49,7 @@ internal class HandlerExecutor<T> : IHandlerExecutor where T : ITpqMessageData
                     CreatedAt = message.CreatedAt,
                 },
                 Data = _serializer.DeserializeFromText<T>(message.DataTxt)
+                    ?? throw new InvalidMessageException("Could not deserialize message data")
             };
             
             typedMessages.Add(typedMessage);

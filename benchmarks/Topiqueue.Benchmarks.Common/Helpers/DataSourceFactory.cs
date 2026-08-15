@@ -1,0 +1,18 @@
+﻿using Npgsql;
+
+namespace Topiqueue.Benchmarks.Common.Helpers;
+
+public static class DataSourceFactory
+{
+    public const string ConnectionString = "Host=localhost;Username=test_user;Password=12345;Database=test_db;GSS Encryption Mode=Disable";
+
+    public static NpgsqlDataSource Create(bool enlist=false)
+    {
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(ConnectionString)
+        {
+            Enlist = enlist
+        };
+        var dataSource = NpgsqlDataSource.Create(ConnectionString);
+        return dataSource;
+    }
+}

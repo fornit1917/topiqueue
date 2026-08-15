@@ -1,4 +1,5 @@
 ﻿using System;
+using Topiqueue.Core.Messages.Interfaces;
 using Topiqueue.Core.ServiceContainer;
 using Topiqueue.Samples.Cli.Common.Messages;
 
@@ -8,7 +9,7 @@ public class SampleCliServiceContainerScope : ITpqServiceContainerScope
 {
     public object? GetService<T>()
     {
-        if (typeof(T) == typeof(DemoMessageData))
+        if (typeof(T) == typeof(ITpqBatchMessageHandler<DemoMessageData>))
         {
             return new DemoMessageHandler();
         }

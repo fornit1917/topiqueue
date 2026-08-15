@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 using Npgsql;
 using Topiqueue.Core.Dao;
@@ -74,9 +76,9 @@ internal class PgsqlProducerDao : ITpqProducerDao
         var cmd = new NpgsqlCommand(_insertQuery, conn);
         cmd.Parameters.Add(new() { Value = message.TopicName });
         cmd.Parameters.Add(new() { Value = message.PartitionNum });
-        cmd.Parameters.Add(new() { Value = message.PartitionKey });
+        cmd.Parameters.Add(new() { Value = (object?)message.PartitionKey ?? DBNull.Value });
         cmd.Parameters.Add(new() { Value = message.MessageType });
-        cmd.Parameters.Add(new() { Value = message.DataTxt });
+        cmd.Parameters.Add(new() { Value = (object?)message.DataTxt ?? DBNull.Value });
         return cmd;
     }
 
@@ -85,9 +87,9 @@ internal class PgsqlProducerDao : ITpqProducerDao
         var cmd = new NpgsqlBatchCommand(_insertQuery);
         cmd.Parameters.Add(new() { Value = message.TopicName });
         cmd.Parameters.Add(new() { Value = message.PartitionNum });
-        cmd.Parameters.Add(new() { Value = message.PartitionKey });
+        cmd.Parameters.Add(new() { Value = (object?)message.PartitionKey ?? DBNull.Value });
         cmd.Parameters.Add(new() { Value = message.MessageType });
-        cmd.Parameters.Add(new() { Value = message.DataTxt });
+        cmd.Parameters.Add(new() { Value = (object?)message.DataTxt ?? DBNull.Value });
         return cmd;
     }
 }

@@ -26,11 +26,12 @@ public class TpqServices
     public ITpqBackgroundService BackgroundService { get; }
     public ITpqMessageFactory MessageFactory { get; }
     public ITpqProducer Producer { get; }
+    public string ServerId { get; }
 
     public TpqServices(TpqConfig config)
     {
         var topicsRegistry = new TopicsRegistry(config.Topics);
-        var serverId = $"{Environment.MachineName}_{Guid.NewGuid()}";
+        ServerId = $"{Environment.MachineName}_{Guid.NewGuid()}";
         
         // todo: add validation for consumers
         
@@ -40,7 +41,7 @@ public class TpqServices
             topicsRegistry,
             config.Consumers,
             config.BackgroundServiceSettings,
-            serverId);
+            ServerId);
         
         var rotateSegmentsService = new SegmentsRotationService(
             config.Dao.TopicsDao, 
@@ -55,7 +56,7 @@ public class TpqServices
             config.LoggerFactory.CreateLogger<HeartbeatService>(),
             config.Consumers,
             config.BackgroundServiceSettings,
-            serverId);
+            ServerId);
         
         MessageFactory = new MessageFactory(
             topicsRegistry,
@@ -84,6 +85,7 @@ public class TpqServices
         
         var consumersDispatcherChannelOpts = new UnboundedChannelOptions
         {
+            AllowSynchronousContinuations = false,
             SingleReader = true,
             SingleWriter = false
         };
@@ -97,7 +99,7 @@ public class TpqServices
             Settings = config.BackgroundServiceSettings,
             Consumers = config.Consumers,
             Topics = topicsRegistry,
-            ServerId = serverId,
+            ServerId = ServerId,
         };
         
         var consumersDaoService = new ConsumersDaoService(
@@ -129,7 +131,7 @@ public class TpqServices
             consumersDaoCommandBus,
             handlersCommandBus,
             config.LoggerFactory.CreateLogger<ConsumersDispatcherService>(),
-            serverId);
+            ServerId);
         
         var partitionsBalancerService = new PartitionsBalancerService(
             config.Dao.ServersDao,
